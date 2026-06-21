@@ -1,0 +1,215 @@
+device:
+  name: AliExpress ch57x macropad
+  vid: '1189'
+  pid: '8842'
+  rows: 3
+  columns: 4
+  knobs: 2
+layers:
+- name: Capa 1
+  buttons:
+  - combo: ctrl+alt+f13
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f14
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f15
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f16
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f17
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f18
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f19
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f20
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f21
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f22
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f23
+    action:
+      type: unassigned
+  - combo: ctrl+alt+f24
+    action:
+      type: unassigned
+  knobs:
+  - ccw:
+      combo: ctrl+win+f13
+      action:
+        type: native
+        key: volume_down
+    press:
+      combo: ctrl+win+f14
+      action:
+        type: native
+        key: mute
+    cw:
+      combo: ctrl+win+f15
+      action:
+        type: native
+        key: volume_up
+  - ccw:
+      combo: ctrl+win+f16
+      action:
+        type: native
+        key: previous
+    press:
+      combo: ctrl+win+f17
+      action:
+        type: native
+        key: play_pause
+    cw:
+      combo: ctrl+win+f18
+      action:
+        type: native
+        key: next
+- name: Capa 2
+  buttons:
+  - combo: ctrl+shift+f13
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f14
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f15
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f16
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f17
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f18
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f19
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f20
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f21
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f22
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f23
+    action:
+      type: unassigned
+  - combo: ctrl+shift+f24
+    action:
+      type: unassigned
+  knobs:
+  - ccw:
+      combo: alt+win+f13
+      action:
+        type: native
+        key: volume_down
+    press:
+      combo: alt+win+f14
+      action:
+        type: native
+        key: mute
+    cw:
+      combo: alt+win+f15
+      action:
+        type: native
+        key: volume_up
+  - ccw:
+      combo: alt+win+f16
+      action:
+        type: native
+        key: previous
+    press:
+      combo: alt+win+f17
+      action:
+        type: native
+        key: play_pause
+    cw:
+      combo: alt+win+f18
+      action:
+        type: native
+        key: next
+- name: Capa 3
+  buttons:
+  - combo: alt+shift+f13
+    action:
+      type: unassigned
+  - combo: alt+shift+f14
+    action:
+      type: unassigned
+  - combo: alt+shift+f15
+    action:
+      type: unassigned
+  - combo: alt+shift+f16
+    action:
+      type: unassigned
+  - combo: alt+shift+f17
+    action:
+      type: unassigned
+  - combo: alt+shift+f18
+    action:
+      type: unassigned
+  - combo: alt+shift+f19
+    action:
+      type: unassigned
+  - combo: alt+shift+f20
+    action:
+      type: unassigned
+  - combo: alt+shift+f21
+    action:
+      type: unassigned
+  - combo: alt+shift+f22
+    action:
+      type: unassigned
+  - combo: alt+shift+f23
+    action:
+      type: unassigned
+  - combo: alt+shift+f24
+    action:
+      type: unassigned
+  knobs:
+  - ccw:
+      combo: shift+win+f13
+      action:
+        type: native
+        key: volume_down
+    press:
+      combo: shift+win+f14
+      action:
+        type: native
+        key: mute
+    cw:
+      combo: shift+win+f15
+      action:
+        type: native
+        key: volume_up
+  - ccw:
+      combo: shift+win+f16
+      action:
+        type: native
+        key: previous
+    press:
+      combo: shift+win+f17
+      action:
+        type: native
+        key: play_pause
+    cw:
+      combo: shift+win+f18
+      action:
+        type: native
+        key: next

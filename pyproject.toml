@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hotkeyconfig"
+version = "0.1.0"
+description = "Programa macropads ch57x (1189:8842) y asigna scripts/atajos a cada tecla."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Munir Torres" }]
+keywords = ["macropad", "ch57x", "hotkeys", "keyboard", "automation"]
+
+# Dependencias mínimas, fijadas (>=), solo de PyPI oficial. Ver SECURITY.md.
+dependencies = [
+    "PyYAML>=6.0.1",
+    "keyboard>=0.13.5",
+    "pystray>=0.19.5",
+    "Pillow>=10.3.0",
+]
+
+[project.optional-dependencies]
+# Acciones de ventana (minimizar/maximizar/cerrar la app activa).
+windows = ["pywin32>=306"]
+# Herramientas de desarrollo y auditoría de seguridad.
+dev = ["pip-audit>=2.7.0", "ruff>=0.5.0"]
+
+[project.scripts]
+hotkeyconfig = "hotkeyconfig.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Mun1to/hotkeyconfig"
+Issues = "https://github.com/Mun1to/hotkeyconfig/issues"
+
+[tool.setuptools]
+packages = ["hotkeyconfig"]
+
+[tool.ruff]
+line-length = 100

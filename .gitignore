@@ -1,0 +1,19 @@
+# Entorno
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+
+# Configuración LOCAL del usuario: nunca se versiona (puede contener rutas/scripts privados)
+config/profile.yaml
+.claude/settings.local.json
+
+# Binario opcional empaquetado
+vendor/ch57x-keyboard-tool*
+
+# Sistema
+desktop.ini
+Thumbs.db
