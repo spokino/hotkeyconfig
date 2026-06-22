@@ -106,8 +106,13 @@ def cmd_flash(args: argparse.Namespace) -> int:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
-    from . import gui
-    return gui.run(args.profile)
+    try:
+        from . import gui_web
+        return gui_web.run(args.profile)
+    except ImportError:
+        print("[aviso] pywebview no disponible; abriendo la GUI básica (tkinter).")
+        from . import gui
+        return gui.run(args.profile)
 
 
 def cmd_autostart(args: argparse.Namespace) -> int:

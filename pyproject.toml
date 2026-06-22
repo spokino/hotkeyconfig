@@ -20,6 +20,7 @@ dependencies = [
     "pystray>=0.19.5",
     "Pillow>=10.3.0",
     "hidapi>=0.14.0",
+    "pywebview>=5.0",
     'pywin32>=306; sys_platform == "win32"',
 ]
 
@@ -36,6 +37,9 @@ Issues = "https://github.com/Mun1to/hotkeyconfig/issues"
 
 [tool.setuptools]
 packages = ["hotkeyconfig"]
+
+[tool.setuptools.package-data]
+hotkeyconfig = ["webui/*.html", "webui/*.js", "webui/*.css"]
 
 [tool.ruff]
 line-length = 100
