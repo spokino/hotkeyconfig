@@ -86,7 +86,7 @@ def run(profile_path: str | Path) -> int:
     api = Api(profile_path)
     webview.create_window(
         "hotkeyconfig", url=str(INDEX), js_api=api,
-        width=920, height=660, min_size=(780, 560),
+        width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )
     webview.start()
