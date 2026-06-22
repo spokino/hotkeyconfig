@@ -31,7 +31,11 @@ class Runtime:
 
         combos.assert_unique()
         self.profile = load(self.profile_path)
-        keyboard.unhook_all_hotkeys()
+        # `keyboard` lanza AttributeError si aún no hay listener (primer arranque).
+        try:
+            keyboard.unhook_all_hotkeys()
+        except (AttributeError, KeyError):
+            pass
         self._registered = 0
         for label, binding in self.profile.iter_bindings():
             action = binding.action

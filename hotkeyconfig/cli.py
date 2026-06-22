@@ -105,6 +105,11 @@ def cmd_flash(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_gui(args: argparse.Namespace) -> int:
+    from . import gui
+    return gui.run(args.profile)
+
+
 def cmd_autostart(args: argparse.Namespace) -> int:
     from . import autostart
 
@@ -167,6 +172,9 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
     r.add_argument("--no-tray", action="store_true", help="sin icono de bandeja")
 
+    gp = sub.add_parser("gui", help="configurador gráfico (clic para asignar acciones)")
+    gp.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
+
     a = sub.add_parser("autostart", help="arranque automático con Windows")
     a.add_argument("action", choices=["install", "uninstall", "status"])
     a.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
@@ -178,6 +186,7 @@ _DISPATCH = {
     "generate": cmd_generate,
     "flash": cmd_flash,
     "run": cmd_run,
+    "gui": cmd_gui,
     "autostart": cmd_autostart,
 }
 

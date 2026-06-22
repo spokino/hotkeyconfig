@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from pathlib import Path
 
 log = logging.getLogger("hotkeyconfig.tray")
 
@@ -41,6 +42,13 @@ def run_tray(runtime) -> None:
         except Exception as exc:  # noqa: BLE001
             icon.notify(f"Error al recargar: {exc}", "hotkeyconfig")
 
+    def on_gui(icon, item):
+        import subprocess
+        import sys
+        pyw = Path(sys.executable).with_name("pythonw.exe")
+        exe = str(pyw if pyw.exists() else sys.executable)
+        subprocess.Popen([exe, "-m", "hotkeyconfig", "gui", "-p", str(runtime.profile_path)])
+
     def on_edit(icon, item):
         os.startfile(str(runtime.profile_path))  # type: ignore[attr-defined]
 
@@ -49,6 +57,7 @@ def run_tray(runtime) -> None:
         icon.stop()
 
     menu = pystray.Menu(
+        Item("Abrir configurador", on_gui, default=True),
         Item(
             lambda item: "Reanudar" if runtime.paused else "Pausar",
             on_toggle,
