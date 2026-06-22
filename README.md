@@ -18,36 +18,40 @@ que ningún teclado físico produce. `hotkeyconfig` usa las teclas fantasma
 combos únicos sin colisión** (12 teclas × 3 capas + 2 perillas × 3 acciones × 3
 capas). Luego un proceso en segundo plano escucha esos combos y ejecuta tu acción.
 
-Las dos mitades difíciles se **reutilizan**, no se reinventan:
+### Dos mitades
 
-| Mitad | Herramienta | Rol |
-|-------|-------------|-----|
-| Grabar combos en el teclado | [`kriomant/ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool) | flasher USB |
-| Escuchar combos y actuar | librería [`keyboard`](https://pypi.org/project/keyboard/) | listener global |
-
-`hotkeyconfig` es el **pegamento**: genera los combos, programa el hardware y
-gestiona las acciones desde `profile.yaml`.
+1. **Grabar los combos únicos en el teclado** — por **HID nativo de Windows**, igual
+   que el software propietario: **sin Zadig, sin drivers, sin Rust**. El protocolo
+   está portado byte a byte desde [`kriomant/ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
+   (que queda como backend alternativo opcional). Como el teclado tiene **memoria
+   interna**, los combos persisten sin ningún software.
+2. **Escuchar los combos y ejecutar acciones** — un listener local con la librería
+   [`keyboard`](https://pypi.org/project/keyboard/), en un icono de bandeja privado
+   que puede **arrancar solo con Windows**.
 
 ## Instalación
 
-```bash
-# 1) Flasher del teclado (Rust)
-cargo install ch57x-keyboard-tool --locked
+Solo Python 3.11+ (nada de Rust):
 
-# 2) La app (Python 3.11+)
+```bash
 python -m venv .venv
-.venv\Scripts\pip install -e ".[windows]"
+.venv\Scripts\pip install -e .
 ```
 
-## Uso en 4 pasos
+## Uso
 
 ```bash
-hotkeyconfig detect                 # comprueba herramienta + teclado conectado
-hotkeyconfig generate               # crea config/profile.yaml con 54 combos únicos
+hotkeyconfig detect              # ¿teclado conectado?
+hotkeyconfig generate            # crea config/profile.yaml con 54 combos únicos
 #   …edita profile.yaml y asigna acciones a tus teclas…
-hotkeyconfig flash                  # graba los combos en el teclado
-hotkeyconfig run                    # escucha y ejecuta (icono en la bandeja)
+hotkeyconfig flash               # graba los combos en la memoria del teclado (HID)
+hotkeyconfig run                 # escucha y ejecuta (icono en la bandeja)
+hotkeyconfig autostart install   # que arranque solo al encender Windows
 ```
+
+> La parte "única" de las teclas vive en la **memoria del teclado** (flasheo una vez,
+> persiste). El listener solo hace falta para **ejecutar tus acciones**; es local y
+> privado, y si no está de fondo simplemente esas acciones no se disparan.
 
 ## Tipos de acción
 
@@ -96,8 +100,12 @@ layers:
   para tus scripts.
 - El listener `keyboard` puede requerir ejecutar como administrador para
   suprimir las pulsaciones en todas las apps.
+- El flasheo HID escribe en la interfaz de programación `MI_00` (usage page
+  `0xFF00`); no afecta a la interfaz de escritura, así que el teclado sigue
+  funcionando con normalidad.
 
 ## Créditos
 
-Construido sobre [`ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
-(MIT, de `kriomant`). Licencia de este proyecto: [MIT](LICENSE).
+Protocolo k884x portado desde [`ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
+(MIT, de `kriomant`), enviado por HID nativo en lugar de libusb. Listener con
+[`keyboard`](https://pypi.org/project/keyboard/). Licencia de este proyecto: [MIT](LICENSE).

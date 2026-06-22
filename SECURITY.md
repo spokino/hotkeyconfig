@@ -13,12 +13,14 @@ sensible. Estos son los compromisos del proyecto.
 
 ## Dependencias legítimas y verificadas
 
-- **`ch57x-keyboard-tool`**: repo público conocido (MIT, autor `kriomant`).
-  Se instala desde **crates.io** con `--locked` (fija el árbol de dependencias
-  transitivas para builds reproducibles). Conviene revisar el código antes de
-  compilar y fijar la versión.
+- **Camino por defecto = Python puro**: el flasheo va por **HID nativo** (`hidapi`),
+  sin Rust ni binarios externos. El protocolo está portado byte a byte (auditable)
+  desde ch57x; se escribe únicamente en la interfaz de programación `MI_00`.
 - **Dependencias Python**: mínimas y solo de **PyPI** oficial
-  (`PyYAML`, `keyboard`, `pystray`, `Pillow`, opcional `pywin32`).
+  (`PyYAML`, `keyboard`, `pystray`, `Pillow`, `hidapi`, `pywin32`).
+- **`ch57x-keyboard-tool`** (backend OPCIONAL): repo público conocido (MIT, autor
+  `kriomant`). Si se usa, instalar desde **crates.io** con `--locked` y auditar con
+  `cargo audit`.
 - **Auditoría**: `pip-audit` (Python) y `cargo audit` (árbol de ch57x) deben
   pasar sin vulnerabilidades conocidas antes de publicar.
 

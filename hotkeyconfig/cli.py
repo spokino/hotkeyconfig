@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import subprocess
 import sys
 from pathlib import Path
 
@@ -47,32 +46,21 @@ def build_default_profile() -> Profile:
 
 # --- subcomandos ---------------------------------------------------------
 def cmd_detect(args: argparse.Namespace) -> int:
-    try:
-        binary = flasher.find_binary()
-        print(f"[ok] ch57x-keyboard-tool: {binary}")
-    except flasher.FlasherError as exc:
-        print(f"[falta] {exc}")
-        return 1
-    # Detección del dispositivo en Windows por VID/PID.
+    from . import hid_flasher
+
     dev = Device()
-    ps = (
-        "Get-PnpDevice -PresentOnly | "
-        f"Where-Object {{ $_.InstanceId -match 'VID_{dev.vid}' -and "
-        f"$_.InstanceId -match 'PID_{dev.pid}' }} | "
-        "Select-Object -ExpandProperty FriendlyName"
-    )
-    try:
-        out = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", ps],
-            capture_output=True, text=True, timeout=15,
-        ).stdout.strip()
-    except Exception:  # noqa: BLE001
-        out = ""
-    if out:
-        print(f"[ok] dispositivo {dev.vid}:{dev.pid} conectado -> {out}")
+    if hid_flasher.is_connected():
+        print(f"[ok] teclado {dev.vid}:{dev.pid} detectado (interfaz de programacion MI_00)")
+        ok = True
     else:
-        print(f"[aviso] no veo el dispositivo {dev.vid}:{dev.pid} (¿enchufado?)")
-    return 0
+        print(f"[aviso] no veo el teclado {dev.vid}:{dev.pid} (¿enchufado?)")
+        ok = False
+    # El binario de ch57x es OPCIONAL: el flasheo por HID no lo necesita.
+    try:
+        print(f"[info] ch57x-keyboard-tool (opcional): {flasher.find_binary()}")
+    except flasher.FlasherError:
+        print("[info] ch57x-keyboard-tool no instalado (no hace falta para el flasheo HID)")
+    return 0 if ok else 1
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
@@ -91,17 +79,52 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 def cmd_flash(args: argparse.Namespace) -> int:
     profile = load(args.profile)
-    print(f"[..] validando mapeo de {args.profile}")
-    flasher.validate(profile)
+    profile.validate()
+    print(f"[..] mapeo de {args.profile} validado ({sum(1 for _ in profile.iter_bindings())} controles)")
+
     if not args.yes:
-        resp = input("Esto ESCRIBIRÁ la configuración en el teclado. ¿Continuar? [s/N] ")
+        resp = input("Esto ESCRIBIRÁ la configuración en la memoria del teclado. ¿Continuar? [s/N] ")
         if resp.strip().lower() not in ("s", "si", "sí", "y", "yes"):
             print("cancelado")
             return 1
-    print("[..] grabando en el teclado…")
-    out = flasher.flash(profile)
-    print(f"[ok] {out}")
+
+    if args.backend == "ch57x":
+        flasher.validate(profile)
+        print("[..] grabando por ch57x-keyboard-tool…")
+        print(f"[ok] {flasher.flash(profile)}")
+        return 0
+
+    # Backend por defecto: HID nativo (sin Zadig ni drivers).
+    from . import hid_flasher
+    if not hid_flasher.is_connected():
+        print("[error] no veo el teclado. Conéctalo y reintenta (o usa --backend ch57x).")
+        return 1
+    print("[..] grabando por HID nativo…")
+    n = hid_flasher.flash(profile)
+    print(f"[ok] {n} mensajes grabados en la memoria del teclado (persisten sin software)")
     return 0
+
+
+def cmd_autostart(args: argparse.Namespace) -> int:
+    from . import autostart
+
+    if args.action == "status":
+        if autostart.is_installed():
+            print(f"[ok] arranque automático activo: {autostart.shortcut_path()}")
+        else:
+            print("[info] arranque automático NO instalado")
+        return 0
+    if args.action == "install":
+        profile = None if args.profile == str(DEFAULT_PROFILE) else args.profile
+        path = autostart.install(profile)
+        print(f"[ok] arranque automático instalado: {path}")
+        print("     La app de bandeja se iniciará sola al entrar en Windows.")
+        return 0
+    if args.action == "uninstall":
+        removed = autostart.uninstall()
+        print("[ok] arranque automático eliminado" if removed else "[info] no estaba instalado")
+        return 0
+    return 1
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -134,13 +157,19 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("-o", "--output", default=str(DEFAULT_PROFILE))
     g.add_argument("--force", action="store_true")
 
-    f = sub.add_parser("flash", help="graba el perfil en el teclado")
+    f = sub.add_parser("flash", help="graba el perfil en la memoria del teclado")
     f.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
     f.add_argument("--yes", action="store_true", help="no preguntar confirmación")
+    f.add_argument("--backend", choices=["hid", "ch57x"], default="hid",
+                   help="hid (por defecto, sin drivers) o ch57x (binario externo)")
 
     r = sub.add_parser("run", help="escucha los combos y ejecuta las acciones")
     r.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
     r.add_argument("--no-tray", action="store_true", help="sin icono de bandeja")
+
+    a = sub.add_parser("autostart", help="arranque automático con Windows")
+    a.add_argument("action", choices=["install", "uninstall", "status"])
+    a.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
     return p
 
 
@@ -149,6 +178,7 @@ _DISPATCH = {
     "generate": cmd_generate,
     "flash": cmd_flash,
     "run": cmd_run,
+    "autostart": cmd_autostart,
 }
 
 
