@@ -109,3 +109,13 @@ layers:
 Protocolo k884x portado desde [`ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
 (MIT, de `kriomant`), enviado por HID nativo en lugar de libusb. Listener con
 [`keyboard`](https://pypi.org/project/keyboard/). Licencia de este proyecto: [MIT](LICENSE).
+
+---
+
+<div align="center">
+
+🌸 Parte de la **Fundación Orquio** · *Easy Tech*
+
+<sub>Tecnología esencial orquestada de forma optimizada, positiva y transparente.</sub>
+
+</div>
