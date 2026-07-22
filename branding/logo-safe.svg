@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <title>hotkeyconfig</title>
+  <defs>
+    <mask id="knockout">
+      <rect width="100" height="100" fill="white"/>
+      <rect x="19.30" y="14.74" width="6.36" height="70.52" rx="3.18" fill="black"/>
+      <rect x="74.25" y="14.74" width="6.36" height="70.52" rx="3.18" fill="black"/>
+      <path d="M77.43,24.63 L28.24,49.57 L77.43,74.42" fill="none" stroke="black" stroke-width="6.36" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="22.48" cy="24.63" r="10.41" fill="black"/>
+      <circle cx="77.43" cy="24.63" r="10.41" fill="black"/>
+      <circle cx="22.48" cy="74.42" r="10.41" fill="black"/>
+      <circle cx="77.43" cy="74.42" r="10.41" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="100" height="100" rx="16.0" fill="#0B4FA4" mask="url(#knockout)"/>
+</svg>

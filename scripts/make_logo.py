@@ -16,15 +16,19 @@ from PIL import Image, ImageDraw
 
 OUT = Path(__file__).resolve().parent.parent / "branding"
 COLOR = (11, 79, 164)  # #0B4FA4 — el azul del logo
-RADIUS = 20.0          # radio de esquina, en unidades de 0-100
+RADIUS = 16.0          # radio de esquina, en unidades de 0-100
 
-# Geometría del símbolo (unidades 0-100), medida del diseño original.
-BAR_W = 7.0
-BAR_X = (14.3, 81.0)          # x izquierda de cada barra vertical
-CIRCLES = ((17.8, 20.5), (84.5, 20.5), (17.8, 78.0), (84.5, 78.0))
-CIRCLE_R = 12.0
-CHEVRON = ((84.5, 20.5), (25.0, 50.0), (84.5, 78.0))
-STROKE = 7.0
+# Geometría del símbolo (unidades 0-100), medida sobre el original.
+# Las barras verticales pasan por el centro de los círculos; las diagonales
+# unen los círculos derechos con un vértice sobre la barra izquierda (forma de K).
+BAR_W = 7.4
+BAR_X = (14.3, 78.2)          # x izquierda de cada barra vertical
+CX = (18.0, 81.9)             # centros x (coinciden con el centro de las barras)
+CY = (20.5, 78.4)             # centros y
+CIRCLES = ((CX[0], CY[0]), (CX[1], CY[0]), (CX[0], CY[1]), (CX[1], CY[1]))
+CIRCLE_R = 12.1
+CHEVRON = ((CX[1], CY[0]), (24.7, 49.5), (CX[1], CY[1]))
+STROKE = 7.4
 
 INSET_SCALE = 0.86            # cuánto se encoge el símbolo en la variante ajustada
 BAR_MARGIN = 9.0              # margen vertical de las barras en la variante ajustada
@@ -109,14 +113,15 @@ def render_png(size: int, inset: bool, supersample: int = 8) -> Image.Image:
 
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "logo.svg").write_text(build_svg(inset=True), encoding="utf-8")
-    (OUT / "logo-flush.svg").write_text(build_svg(inset=False), encoding="utf-8")
+    # Principal = fiel al original (a sangre). La variante con margen queda aparte.
+    (OUT / "logo.svg").write_text(build_svg(inset=False), encoding="utf-8")
+    (OUT / "logo-safe.svg").write_text(build_svg(inset=True), encoding="utf-8")
 
     for size in (512, 256, 128, 64, 32, 16):
-        render_png(size, inset=True).save(OUT / f"logo-{size}.png")
-    render_png(256, inset=False).save(OUT / "logo-flush-256.png")
+        render_png(size, inset=False).save(OUT / f"logo-{size}.png")
+    render_png(256, inset=True).save(OUT / "logo-safe-256.png")
 
-    icons = [render_png(s, inset=True) for s in (16, 32, 48, 64, 128, 256)]
+    icons = [render_png(s, inset=False) for s in (16, 32, 48, 64, 128, 256)]
     icons[-1].save(OUT / "favicon.ico", format="ICO",
                    sizes=[(i.width, i.height) for i in icons])
 
