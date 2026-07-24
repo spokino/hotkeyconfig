@@ -8,8 +8,9 @@ conectado, las configuraciones se aplican solas sin abrir nada a mano.
 from __future__ import annotations
 
 import os
-import sys
 from pathlib import Path
+
+from ._appcmd import app_target
 
 SHORTCUT_NAME = "hotkeyconfig.lnk"
 
@@ -20,12 +21,6 @@ def _startup_dir() -> Path:
 
 def shortcut_path() -> Path:
     return _startup_dir() / SHORTCUT_NAME
-
-
-def _pythonw() -> str:
-    """Ruta a pythonw.exe (sin consola) del intérprete actual."""
-    cand = Path(sys.executable).with_name("pythonw.exe")
-    return str(cand if cand.exists() else sys.executable)
 
 
 def is_installed() -> bool:
@@ -41,7 +36,8 @@ def install(profile: str | None = None) -> Path:
             "El arranque automático necesita pywin32 (pip install pywin32)."
         ) from exc
 
-    args = "-m hotkeyconfig run"
+    exe, prefix = app_target()
+    args = (prefix + " run").strip()
     if profile:
         args += f' --profile "{profile}"'
 
@@ -51,7 +47,7 @@ def install(profile: str | None = None) -> Path:
 
     shell = win32com.client.Dispatch("WScript.Shell")
     sc = shell.CreateShortcut(str(lnk))
-    sc.TargetPath = _pythonw()
+    sc.TargetPath = exe
     sc.Arguments = args
     sc.WorkingDirectory = str(Path(__file__).resolve().parent.parent)
     sc.Description = "hotkeyconfig — listener de macropad (local y privado)"

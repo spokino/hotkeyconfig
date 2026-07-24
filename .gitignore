@@ -14,6 +14,11 @@ config/profile.yaml
 # Binario opcional empaquetado
 vendor/ch57x-keyboard-tool*
 
+# Empaquetado (PyInstaller / Inno Setup): recrea con scripts/build.py
+dist/
+build/
+*.spec
+
 # Sistema
 desktop.ini
 Thumbs.db

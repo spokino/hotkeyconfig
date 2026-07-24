@@ -7,19 +7,14 @@ con Python (``Api``) para leer/guardar el perfil, flashear y manejar el listener
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 
 from . import hid_flasher
+from ._appcmd import app_command
 from .profile import Profile, load, save
 
 HERE = Path(__file__).resolve().parent
 INDEX = HERE / "webui" / "index.html"
-
-
-def _pythonw() -> str:
-    cand = Path(sys.executable).with_name("pythonw.exe")
-    return str(cand if cand.exists() else sys.executable)
 
 
 class Api:
@@ -70,7 +65,7 @@ class Api:
     def start_listener(self) -> dict:
         if not (self.listener and self.listener.poll() is None):
             self.listener = subprocess.Popen(
-                [_pythonw(), "-m", "hotkeyconfig", "run", "--no-tray", "-p", str(self.profile_path)])
+                app_command("run", "--no-tray", "-p", str(self.profile_path)))
         return {"listener": True}
 
     def stop_listener(self) -> dict:

@@ -68,6 +68,21 @@ hotkeyconfig autostart install   # que arranque solo al encender Windows
 > persiste). El listener solo hace falta para **ejecutar tus acciones**; es local y
 > privado, y si no está de fondo simplemente esas acciones no se disparan.
 
+## Compilar el ejecutable (.exe)
+
+Genera una app de Windows autónoma (sin necesitar Python) e instalador, con
+PyInstaller + Inno Setup:
+
+```bash
+.venv\Scripts\pip install -e ".[dev]"
+.venv\Scripts\python scripts/build.py              # dist\hotkeyconfig\hotkeyconfig.exe
+.venv\Scripts\python scripts/build.py --installer  # + dist\hotkeyconfig-<version>-setup.exe
+```
+
+El instalador no pide administrador, crea accesos directos y una casilla para
+arrancar con Windows. La configuración del usuario se guarda en
+`%LOCALAPPDATA%\hotkeyconfig\profile.yaml`.
+
 ## Tipos de acción
 
 | `type` | Qué hace | Campos |

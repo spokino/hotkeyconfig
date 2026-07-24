@@ -4,14 +4,25 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
 from . import combos, flasher
+from ._appcmd import is_frozen
 from .profile import Action, Binding, Device, Layer, Profile, load, save
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_PROFILE = PROJECT_ROOT / "config" / "profile.yaml"
+
+def _default_profile_path() -> Path:
+    """Dónde vive profile.yaml: junto al código en desarrollo, en los datos del
+    usuario cuando la app está empaquetada (la carpeta del programa es de solo lectura)."""
+    if is_frozen():
+        base = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "hotkeyconfig"
+        return base / "profile.yaml"
+    return Path(__file__).resolve().parent.parent / "config" / "profile.yaml"
+
+
+DEFAULT_PROFILE = _default_profile_path()
 
 # Acciones por defecto de las perillas (multimedia nativo, válido en cualquier capa).
 _DEFAULT_KNOBS = {
@@ -78,6 +89,9 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 
 def cmd_flash(args: argparse.Namespace) -> int:
+    if not Path(args.profile).exists():
+        print(f"[error] no existe {args.profile}. Ejecuta primero: hotkeyconfig generate")
+        return 1
     profile = load(args.profile)
     profile.validate()
     print(f"[..] mapeo de {args.profile} validado ({sum(1 for _ in profile.iter_bindings())} controles)")
@@ -137,9 +151,19 @@ def cmd_autostart(args: argparse.Namespace) -> int:
     return 1
 
 
+def _ensure_profile(path: str) -> None:
+    """Crea un profile.yaml por defecto si no existe (p. ej. primer arranque tras instalar)."""
+    p = Path(path)
+    if not p.exists():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        save(build_default_profile(), p)
+        logging.getLogger("hotkeyconfig").info("perfil por defecto creado en %s", p)
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     from .runtime import Runtime
 
+    _ensure_profile(args.profile)
     runtime = Runtime(args.profile)
     if args.no_tray:
         runtime.load()

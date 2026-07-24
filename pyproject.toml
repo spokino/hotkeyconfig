@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Herramientas de desarrollo y auditoría de seguridad.
-dev = ["pip-audit>=2.7.0", "ruff>=0.5.0"]
+# Herramientas de desarrollo, auditoría y empaquetado.
+dev = ["pip-audit>=2.7.0", "ruff>=0.5.0", "pyinstaller>=6.0"]
 
 [project.scripts]
 hotkeyconfig = "hotkeyconfig.cli:main"
