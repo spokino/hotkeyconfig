@@ -15,6 +15,12 @@
   <img alt="Sin drivers" src="https://img.shields.io/badge/sin%20Zadig%20%2F%20sin%20Rust-0B4FA4">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest/download/hotkeyconfig-setup.exe"><b>Descargar para Windows (instalador)</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest">Todas las descargas</a>
+</p>
+
 App **open source** y sencilla para convertir un macropad chino barato (los de
 AliExpress basados en el chip **ch57x**, p. ej. `1189:8842`, de 12 teclas + 2
 perillas + 3 capas) en un panel de atajos donde **cada tecla ejecuta el script
