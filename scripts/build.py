@@ -53,12 +53,27 @@ def build_exe() -> None:
     print(f"[ok] .exe en {ROOT / 'dist' / 'hotkeyconfig' / 'hotkeyconfig.exe'}")
 
 
+def _find_iscc() -> str:
+    """Localiza ISCC.exe (Inno Setup 6): instalación local del usuario, Program Files o PATH."""
+    import shutil
+
+    cands = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Inno Setup 6" / "ISCC.exe",
+        Path(r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"),
+        Path(r"C:\Program Files\Inno Setup 6\ISCC.exe"),
+    ]
+    for c in cands:
+        if c.exists():
+            return str(c)
+    found = shutil.which("ISCC")
+    if found:
+        return found
+    raise SystemExit("no encuentro ISCC (Inno Setup 6). Instálalo o añádelo al PATH.")
+
+
 def build_installer(version: str) -> None:
-    iscc = Path(os.environ["LOCALAPPDATA"]) / "Programs" / "Inno Setup 6" / "ISCC.exe"
-    if not iscc.exists():
-        raise SystemExit(f"no encuentro ISCC (Inno Setup 6) en {iscc}")
     subprocess.run(
-        [str(iscc), f"/DMyAppVersion={version}", str(ROOT / "installer" / "hotkeyconfig.iss")],
+        [_find_iscc(), f"/DMyAppVersion={version}", str(ROOT / "installer" / "hotkeyconfig.iss")],
         cwd=ROOT, check=True,
     )
     print(f"[ok] instalador en {ROOT / 'dist' / f'hotkeyconfig-{version}-setup.exe'}")
