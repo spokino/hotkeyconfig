@@ -71,6 +71,7 @@ class Layer:
     name: str
     buttons: list[Binding]
     knobs: list[dict[str, Binding]]  # por perilla: {ccw, press, cw} -> Binding
+    led: dict[str, Any] | None = None  # {mode, color} de la iluminación (None = no tocar)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Layer":
@@ -79,10 +80,11 @@ class Layer:
             {act: Binding.from_dict(k[act]) for act in combos.KNOB_ACTIONS}
             for k in data["knobs"]
         ]
-        return cls(name=data.get("name", ""), buttons=buttons, knobs=knobs)
+        return cls(name=data.get("name", ""), buttons=buttons, knobs=knobs,
+                   led=data.get("led"))
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "name": self.name,
             "buttons": [b.to_dict() for b in self.buttons],
             "knobs": [
@@ -90,6 +92,9 @@ class Layer:
                 for kb in self.knobs
             ],
         }
+        if self.led:
+            out["led"] = self.led
+        return out
 
 
 @dataclass
@@ -100,6 +105,7 @@ class Device:
     rows: int = combos.ROWS
     columns: int = combos.COLUMNS
     knobs: int = combos.KNOBS
+    orientation: str = "normal"  # normal | upsidedown | clockwise | counterclockwise
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Device":
@@ -109,6 +115,7 @@ class Device:
         return {
             "name": self.name, "vid": self.vid, "pid": self.pid,
             "rows": self.rows, "columns": self.columns, "knobs": self.knobs,
+            "orientation": self.orientation,
         }
 
 
@@ -116,22 +123,31 @@ class Device:
 class Profile:
     device: Device
     layers: list[Layer]
+    hotkeys: list[Binding] = field(default_factory=list)  # atajos del teclado normal
+    remaps: list[dict[str, str]] = field(default_factory=list)  # [{from, to}] remapeos
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Profile":
         return cls(
             device=Device.from_dict(data.get("device", {})),
             layers=[Layer.from_dict(layer) for layer in data["layers"]],
+            hotkeys=[Binding.from_dict(h) for h in data.get("hotkeys", [])],
+            remaps=[dict(r) for r in data.get("remaps", [])],
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "device": self.device.to_dict(),
             "layers": [layer.to_dict() for layer in self.layers],
         }
+        if self.hotkeys:
+            out["hotkeys"] = [h.to_dict() for h in self.hotkeys]
+        if self.remaps:
+            out["remaps"] = [dict(r) for r in self.remaps]
+        return out
 
     def iter_bindings(self):
-        """Recorre (label, Binding) de todos los controles, todas las capas."""
+        """Recorre (label, Binding) de los controles del macropad, todas las capas."""
         for li, layer in enumerate(self.layers, start=1):
             for bi, binding in enumerate(layer.buttons, start=1):
                 yield (f"C{li}/tecla{bi}", binding)
@@ -140,7 +156,7 @@ class Profile:
                     yield (f"C{li}/perilla{ki}/{act}", knob[act])
 
     def validate(self) -> None:
-        """Comprueba unicidad de combos y consistencia del layout."""
+        """Comprueba unicidad de combos del macropad y consistencia del layout."""
         seen: dict[str, str] = {}
         for label, binding in self.iter_bindings():
             if binding.combo in seen:

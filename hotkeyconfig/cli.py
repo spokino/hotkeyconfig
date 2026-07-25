@@ -31,20 +31,21 @@ _DEFAULT_KNOBS = {
 }
 
 
-def build_default_profile() -> Profile:
-    """Perfil inicial: combos únicos en todo, botones sin asignar, perillas a multimedia."""
-    device = Device()
+def build_default_profile(device: Device | None = None) -> Profile:
+    """Perfil inicial para un layout: combos únicos, botones sin asignar, perillas a multimedia."""
+    device = device or Device()
+    per_layer = device.rows * device.columns
     layers: list[Layer] = []
     for li in range(combos.LAYERS):
         buttons = [
-            Binding(combos.button_combo(li, i), Action("unassigned"))
-            for i in range(device.rows * device.columns)
+            Binding(combos.button_combo(li, i, per_layer), Action("unassigned"))
+            for i in range(per_layer)
         ]
         knobs: list[dict[str, Binding]] = []
         for ki in range(device.knobs):
             kd: dict[str, Binding] = {}
             for act in combos.KNOB_ACTIONS:
-                combo = combos.knob_combo(li, ki, act)
+                combo = combos.knob_combo(li, ki, act, device.knobs)
                 key = _DEFAULT_KNOBS.get(ki, {}).get(act)
                 action = Action("native", {"key": key}) if key else Action("unassigned")
                 kd[act] = Binding(combo, action)

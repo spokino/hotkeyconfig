@@ -53,6 +53,40 @@ class Api:
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
+    def test_action(self, action_dict: dict) -> dict:
+        """Ejecuta una acción una vez, para probarla desde la GUI."""
+        try:
+            from . import actions
+            from .profile import Action
+            actions.execute(Action.from_dict(action_dict))
+            return {"ok": True}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def resize_layout(self, current: dict, rows: int, columns: int, knobs: int, orientation: str) -> dict:
+        """Cambia la estructura conservando acciones, luz y atajos (regenera combos)."""
+        from .cli import build_default_profile
+        from .profile import Device, Profile
+        old = Profile.from_dict(current)
+        dev = Device(rows=int(rows), columns=int(columns), knobs=int(knobs), orientation=orientation)
+        new = build_default_profile(dev)
+        for li, layer in enumerate(new.layers):
+            if li >= len(old.layers):
+                break
+            old_layer = old.layers[li]
+            for bi, binding in enumerate(layer.buttons):
+                if bi < len(old_layer.buttons):
+                    binding.action = old_layer.buttons[bi].action
+            for ki, knob in enumerate(layer.knobs):
+                if ki < len(old_layer.knobs):
+                    for act in ("ccw", "press", "cw"):
+                        knob[act].action = old_layer.knobs[ki][act].action
+            layer.led = old_layer.led
+        new.hotkeys = old.hotkeys
+        new.remaps = old.remaps
+        save(new, self.profile_path)
+        return new.to_dict()
+
     # --- estado / listener ---------------------------------------------
     def status(self) -> dict:
         running = self.listener is not None and self.listener.poll() is None

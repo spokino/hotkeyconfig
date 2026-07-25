@@ -32,28 +32,49 @@ class Runtime:
         combos.assert_unique()
         self.profile = load(self.profile_path)
         # `keyboard` lanza AttributeError si aún no hay listener (primer arranque).
+        # unhook_all() limpia atajos Y remapeos previos (para recargar en caliente).
         try:
-            keyboard.unhook_all_hotkeys()
+            keyboard.unhook_all()
         except (AttributeError, KeyError):
             pass
         self._registered = 0
+
+        # 1) Controles del macropad (combos únicos F13-F24).
         for label, binding in self.profile.iter_bindings():
             action = binding.action
             if action.type in ("native", "unassigned"):
                 continue
-            hotkey = combos.to_keyboard(binding.combo)
+            self._register(keyboard, combos.to_keyboard(binding.combo), label, action)
+
+        # 2) Atajos del teclado normal que el usuario grabó (formato de `keyboard`).
+        for i, binding in enumerate(self.profile.hotkeys, start=1):
+            if binding.action.type in ("unassigned", "native"):
+                continue
+            self._register(keyboard, binding.combo, f"atajo{i}", binding.action)
+
+        # 3) Remapeos de teclas sueltas (tecla origen -> tecla destino).
+        for r in self.profile.remaps:
+            src, dst = r.get("from"), r.get("to")
+            if not src or not dst:
+                continue
             try:
-                keyboard.add_hotkey(
-                    hotkey,
-                    self._make_callback(label, action),
-                    suppress=True,
-                    trigger_on_release=False,
-                )
+                keyboard.remap_key(src, dst)
                 self._registered += 1
             except Exception:  # noqa: BLE001
-                log.exception("no pude registrar %s (%s)", hotkey, label)
-        log.info("registrados %d atajos desde %s", self._registered, self.profile_path)
+                log.exception("no pude remapear %s -> %s", src, dst)
+
+        log.info("registrados %d atajos/remapeos desde %s", self._registered, self.profile_path)
         return self._registered
+
+    def _register(self, keyboard, hotkey: str, label: str, action) -> None:
+        try:
+            keyboard.add_hotkey(
+                hotkey, self._make_callback(label, action),
+                suppress=True, trigger_on_release=False,
+            )
+            self._registered += 1
+        except Exception:  # noqa: BLE001
+            log.exception("no pude registrar %s (%s)", hotkey, label)
 
     def reload(self) -> int:
         log.info("recargando configuracion…")
@@ -83,5 +104,8 @@ class Runtime:
     def stop(self) -> None:
         import keyboard
 
-        keyboard.unhook_all_hotkeys()
+        try:
+            keyboard.unhook_all()
+        except (AttributeError, KeyError):
+            pass
         log.info("runtime detenido")

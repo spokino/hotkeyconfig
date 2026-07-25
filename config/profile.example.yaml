@@ -5,6 +5,7 @@ device:
   rows: 3
   columns: 4
   knobs: 2
+  orientation: normal
 layers:
 - name: Capa 1
   buttons:
@@ -115,32 +116,32 @@ layers:
       type: unassigned
   knobs:
   - ccw:
-      combo: alt+win+f13
+      combo: ctrl+win+f19
       action:
         type: native
         key: volume_down
     press:
-      combo: alt+win+f14
+      combo: ctrl+win+f20
       action:
         type: native
         key: mute
     cw:
-      combo: alt+win+f15
+      combo: ctrl+win+f21
       action:
         type: native
         key: volume_up
   - ccw:
-      combo: alt+win+f16
+      combo: ctrl+win+f22
       action:
         type: native
         key: previous
     press:
-      combo: alt+win+f17
+      combo: ctrl+win+f23
       action:
         type: native
         key: play_pause
     cw:
-      combo: alt+win+f18
+      combo: ctrl+win+f24
       action:
         type: native
         key: next
@@ -184,32 +185,32 @@ layers:
       type: unassigned
   knobs:
   - ccw:
-      combo: shift+win+f13
+      combo: alt+win+f13
       action:
         type: native
         key: volume_down
     press:
-      combo: shift+win+f14
+      combo: alt+win+f14
       action:
         type: native
         key: mute
     cw:
-      combo: shift+win+f15
+      combo: alt+win+f15
       action:
         type: native
         key: volume_up
   - ccw:
-      combo: shift+win+f16
+      combo: alt+win+f16
       action:
         type: native
         key: previous
     press:
-      combo: shift+win+f17
+      combo: alt+win+f17
       action:
         type: native
         key: play_pause
     cw:
-      combo: shift+win+f18
+      combo: alt+win+f18
       action:
         type: native
         key: next

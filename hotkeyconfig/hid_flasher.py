@@ -54,7 +54,7 @@ def flash(profile: Profile, vid: int = VID, pid: int = PID, inter_delay: float =
             "(usage page 0xFF00). ¿Está el teclado enchufado?"
         )
 
-    messages = protocol.build_messages(profile)
+    messages = protocol.build_messages(profile) + protocol.build_led_messages(profile)
     dev = hid.device()
     try:
         dev.open_path(path)

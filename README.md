@@ -30,6 +30,16 @@ o la acción que tú quieras**.
 > Drive, desde un único archivo de configuración, y con un listener que no es un
 > keylogger (ver [SECURITY.md](SECURITY.md)).
 
+## Funciones
+
+- **Cada tecla y perilla hace lo que quieras**: ejecutar scripts, abrir apps/carpetas/URLs,
+  escribir texto, controlar multimedia (Spotify, volumen), enviar atajos, operar ventanas o secuencias.
+- **Atajos del teclado normal**: graba cualquier combinación (ej. `Ctrl+Alt+S`) y asígnale una acción,
+  no solo el macropad. Y **remapea teclas** sueltas (ej. `Bloq Mayús → Esc`).
+- **Iluminación RGB**: color y modo de los LEDs (fija, al pulsar, onda) por capa.
+- **Layout configurable**: ajusta filas, columnas, perillas y orientación para tu hardware.
+- **App de escritorio** con configurador visual (tema claro/oscuro), arranque con Windows e instalador.
+
 ## ¿Por qué existe?
 
 Estos macropads no exponen un identificador único por tecla: emiten pulsaciones
