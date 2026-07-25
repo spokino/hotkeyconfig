@@ -43,6 +43,7 @@ const T = {
     knob_ccw: "◀ izq.", knob_press: "● pulsar", knob_cw: "der. ▶", key_word: "Tecla", knob_word: "Perilla", action_word: "Acción",
     connected: "teclado conectado", disconnected: "teclado no detectado", listen_start: "Iniciar listener", listen_stop: "Parar listener",
     saved: "Guardado", executed: "Ejecutado", flashing: "Flasheando…", flashed: "Teclado grabado", listener_on: "Listener activo", listener_off: "Listener detenido", layout_applied: "Estructura aplicada",
+    version_available: "Versión {v} disponible", update_now: "Actualizar", download: "Descargar", updating: "Descargando actualización…",
     confirm_flash: "Se grabarán los combos y la iluminación en la MEMORIA del teclado. ¿Continuar?",
     confirm_layout: "Cambiar la estructura regenera los combos (habrá que reflashear), pero conserva tus acciones. ¿Continuar?",
     cap_shortcut: "Pulsa el atajo del teclado", cap_from: "Pulsa la tecla ORIGEN", cap_to: "Pulsa la tecla DESTINO", cap_waiting: "Esperando…",
@@ -71,6 +72,7 @@ const T = {
     knob_ccw: "◀ left", knob_press: "● press", knob_cw: "right ▶", key_word: "Key", knob_word: "Knob", action_word: "Action",
     connected: "keyboard connected", disconnected: "keyboard not found", listen_start: "Start listener", listen_stop: "Stop listener",
     saved: "Saved", executed: "Done", flashing: "Flashing…", flashed: "Keyboard written", listener_on: "Listener running", listener_off: "Listener stopped", layout_applied: "Structure applied",
+    version_available: "Version {v} available", update_now: "Update", download: "Download", updating: "Downloading update…",
     confirm_flash: "This writes the combos and lighting into the keyboard's MEMORY. Continue?",
     confirm_layout: "Changing the structure regenerates the combos (you'll need to reflash), but keeps your actions. Continue?",
     cap_shortcut: "Press the keyboard shortcut", cap_from: "Press the SOURCE key", cap_to: "Press the TARGET key", cap_waiting: "Waiting…",
@@ -87,7 +89,7 @@ const T = {
 let LANG = "es";
 const tr = (k) => (T[LANG] && T[LANG][k] != null ? T[LANG][k] : (T.es[k] != null ? T.es[k] : k));
 
-const state = { profile: null, layer: 0, section: "pad", listener: false, dirty: false };
+const state = { profile: null, layer: 0, section: "pad", listener: false, dirty: false, update: null };
 const $ = (id) => document.getElementById(id);
 const api = () => window.pywebview.api;
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -129,6 +131,7 @@ function applyLang(lang) {
   $("langSel").value = lang;
   localStorage.setItem("hkc-lang", lang);
   if (state.profile) renderAll();
+  refreshUpdateBar();
 }
 
 // --- editor modal ---------------------------------------------------------
@@ -254,6 +257,17 @@ function setListenerBtn() { const b = $("listenBtn"); b.querySelector("span").te
 async function pollStatus() {
   try { const s = await api().status(); state.listener = s.listener; $("devPill").className = "pill" + (s.connected ? " on" : ""); $("devTxt").textContent = s.connected ? tr("connected") : tr("disconnected"); setListenerBtn(); } catch (e) { /* */ }
 }
+function refreshUpdateBar() {
+  const u = state.update; if (!u || !u.update_available) return;
+  $("updateText").textContent = tr("version_available").replace("{v}", u.latest);
+  $("updateBtn").textContent = u.can_auto_install ? tr("update_now") : tr("download");
+}
+async function checkUpdate() {
+  try {
+    const u = await api().check_update();
+    if (u && u.update_available) { state.update = u; $("updateBar").classList.add("show"); refreshUpdateBar(); }
+  } catch (e) { /* sin conexión: silencioso */ }
+}
 function switchSection(sec) {
   state.section = sec;
   document.querySelectorAll(".nav .tab").forEach((t) => t.classList.toggle("active", t.dataset.sec === sec));
@@ -315,6 +329,13 @@ function wire() {
   $("nav").addEventListener("click", (e) => { const t = e.target.closest(".tab"); if (t) switchSection(t.dataset.sec); });
   $("guideBtn").onclick = startTour;
   $("startTour").onclick = startTour;
+  $("updateBtn").onclick = async () => {
+    const u = state.update; if (!u) return;
+    if (u.can_auto_install) { toast(tr("updating")); const r = await api().apply_update(); if (!r.ok) toast(tr("err") + ": " + r.error, "err"); }
+    else api().open_url(u.notes_url);
+  };
+  $("updateNotes").onclick = () => { if (state.update) api().open_url(state.update.notes_url); };
+  $("updateClose").onclick = () => $("updateBar").classList.remove("show");
   $("tourNext").onclick = () => { if (tourStep < TOUR.length - 1) { tourStep++; showTourStep(); } else endTour(); };
   $("tourBack").onclick = () => { if (tourStep > 0) { tourStep--; showTourStep(); } };
   $("tourSkip").onclick = endTour;
@@ -353,6 +374,7 @@ function setLed() { const mode = $("ledMode").value, color = $("ledColor").value
 async function init() {
   state.profile = await api().get_profile();
   wire(); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
+  checkUpdate();
   if (!localStorage.getItem("hkc-seen")) startTour();
 }
 if (window.pywebview && window.pywebview.api) init();

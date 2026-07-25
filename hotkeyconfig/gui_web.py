@@ -88,6 +88,19 @@ class Api:
         return new.to_dict()
 
     # --- estado / listener ---------------------------------------------
+    def check_update(self) -> dict:
+        from . import updater
+        return updater.check_for_update()
+
+    def apply_update(self) -> dict:
+        from . import updater
+        return updater.apply_update()
+
+    def open_url(self, url: str) -> dict:
+        import webbrowser
+        webbrowser.open(url)
+        return {"ok": True}
+
     def status(self) -> dict:
         running = self.listener is not None and self.listener.poll() is None
         try:

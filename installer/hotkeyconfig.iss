@@ -5,7 +5,7 @@
 
 #define MyAppName "hotkeyconfig"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.2.0"
+  #define MyAppVersion "0.3.0"
 #endif
 #define MyAppPublisher "Munir Torres"
 #define MyAppURL "https://github.com/Mun1to/hotkeyconfig"
@@ -56,8 +56,10 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 ; Instala el arranque automatico del listener si el usuario lo marco.
 Filename: "{app}\{#MyAppExeName}"; Parameters: "autostart install"; Flags: runhidden waituntilterminated; Tasks: autostart
-; Casilla "Ejecutar hotkeyconfig" al terminar.
+; Casilla "Ejecutar hotkeyconfig" al terminar (instalacion interactiva).
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; Auto-update silencioso: reabre la app al terminar.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent
 
 [UninstallRun]
 ; Al desinstalar, quita el arranque automatico.
