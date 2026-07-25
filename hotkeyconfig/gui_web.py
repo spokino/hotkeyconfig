@@ -78,10 +78,12 @@ class Api:
             for bi, binding in enumerate(layer.buttons):
                 if bi < len(old_layer.buttons):
                     binding.action = old_layer.buttons[bi].action
+                    binding.color = old_layer.buttons[bi].color
             for ki, knob in enumerate(layer.knobs):
                 if ki < len(old_layer.knobs):
                     for act in ("ccw", "press", "cw"):
                         knob[act].action = old_layer.knobs[ki][act].action
+                        knob[act].color = old_layer.knobs[ki][act].color
             layer.led = old_layer.led
         new.hotkeys = old.hotkeys
         new.remaps = old.remaps

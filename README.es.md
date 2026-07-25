@@ -42,6 +42,10 @@ acciones.
 - ⌨️ **También tu teclado normal**: graba cualquier combinación (por ejemplo `Ctrl+Alt+S`) y
   asígnale una acción, y **remapea teclas sueltas** (`Bloq Mayús` a `Esc`).
 - 🌈 **Iluminación RGB**: color y modo (fija, al pulsar, onda) por capa, grabados en el teclado.
+- 💡 **Color por acción**: dale un color a un control y el teclado se tiñe de ese color al
+  pulsarlo, volviendo después al color de la capa. Ojo, es **solo al pulsar**: el ch57x no puede
+  mantener un color distinto en cada tecla (ver [docs/PROTOCOL.md](docs/PROTOCOL.md)), y hace
+  falta tener el listener en marcha.
 - 🧩 **Layout configurable**: filas, columnas, perillas y orientación, para encajar con otros
   modelos ch57x.
 - 🖥️ **App de escritorio de verdad**: editor visual, tema claro/oscuro que sigue al del sistema,
@@ -199,6 +203,18 @@ Ejemplo de perfil: [`config/profile.example.yaml`](config/profile.example.yaml).
 protocolo: [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ---
+
+## 🧭 Hoja de ruta
+
+- **Más teclados.** Hoy solo se admite la familia ch57x (`1189:8842`, k884x), porque el protocolo
+  de configuración es específico de cada modelo. El siguiente es el **K8850** (`514c:8850`, 16
+  teclas y 3 perillas), que además es interesante por sí mismo: ese sí admite **RGB real por
+  tecla**, algo que el k884x no puede hacer de ninguna manera.
+- **Firmar el ejecutable**, para quitar el aviso de SmartScreen.
+
+¿Tienes otro macropad y quieres que funcione? Abre un issue con su identificador USB
+(`hotkeyconfig detect`) y, si puedes, una captura USB del software del fabricante
+configurándolo.
 
 ## 📄 Licencia y créditos
 

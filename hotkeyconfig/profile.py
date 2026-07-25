@@ -58,13 +58,21 @@ class Action:
 class Binding:
     combo: str
     action: Action
+    # Color de aviso al pulsar este control. El ch57x no admite un color por tecla
+    # en reposo, asi que el listener tine el teclado ENTERO un instante y lo devuelve
+    # al color de la capa. Requiere que la capa tenga iluminacion configurada.
+    color: str | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Binding":
-        return cls(combo=data["combo"], action=Action.from_dict(data.get("action")))
+        return cls(combo=data["combo"], action=Action.from_dict(data.get("action")),
+                   color=data.get("color"))
 
     def to_dict(self) -> dict[str, Any]:
-        return {"combo": self.combo, "action": self.action.to_dict()}
+        out: dict[str, Any] = {"combo": self.combo, "action": self.action.to_dict()}
+        if self.color:
+            out["color"] = self.color
+        return out
 
 
 @dataclass

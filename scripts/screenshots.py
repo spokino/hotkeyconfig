@@ -49,10 +49,12 @@ def demo_profile():
         ("window", {"do": "minimize"}),
         ("run", {"cmd": "pwsh C:/scripts/backup.ps1"}),
     ]
+    colores = ["green", "purple", "cyan", "orange", None, None, None, "red"]
     layer = prof.layers[0]
     for i, (type_, params) in enumerate(demo):
         if i < len(layer.buttons):
             layer.buttons[i].action = Action(type=type_, params=params)
+            layer.buttons[i].color = colores[i]
     layer.led = {"mode": "backlight", "color": "blue"}
 
     prof.hotkeys = [
@@ -224,11 +226,9 @@ def capture(hwnd: int, path: Path, cal) -> None:
 # (nombre de archivo, JS que deja la interfaz en el estado deseado)
 SHOTS = [
     ("01-macropad", "switchSection('pad'); state.layer=0; renderAll(); ''"),
-    ("02-editor", """
-        switchSection('pad');
-        document.querySelector('.grid .key').click();
-        setTimeout(function(){ document.getElementById('edType')._enh.trigger.click(); }, 120);
-        ''"""),
+    # Editor abierto SIN desplegar el tipo: asi se ve el campo de color al pulsar,
+    # que quedaria tapado por el menu.
+    ("02-editor", "switchSection('pad'); document.querySelector('.grid .key').click(); ''"),
     ("03-shortcuts", "closeEditor(); switchSection('keys'); ''"),
     ("04-guide", "switchSection('guide'); ''"),
 ]

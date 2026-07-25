@@ -48,6 +48,7 @@ const T = {
     confirm_layout: "Cambiar la estructura regenera los combos (habrá que reflashear), pero conserva tus acciones. ¿Continuar?",
     cap_shortcut: "Pulsa el atajo del teclado", cap_from: "Pulsa la tecla ORIGEN", cap_to: "Pulsa la tecla DESTINO", cap_waiting: "Esperando…",
     none_hotkeys: "Ningún atajo todavía.", none_remaps: "Ningún remapeo todavía.", edit: "Editar", err: "Error",
+    no_color: "Sin color",
     steps: [
       { t: "Conecta y flashea", b: "Enchufa el macropad y pulsa <b>Flashear teclado</b>. Se graban en su memoria los códigos únicos de cada tecla (persisten sin la app)." },
       { t: "Asigna acciones", b: "En <b>Macropad</b>, haz clic en una tecla o perilla y elige qué hace: abrir Spotify, ejecutar un script, escribir texto, multimedia… Usa <b>Probar</b> para verla en acción." },
@@ -77,6 +78,7 @@ const T = {
     confirm_layout: "Changing the structure regenerates the combos (you'll need to reflash), but keeps your actions. Continue?",
     cap_shortcut: "Press the keyboard shortcut", cap_from: "Press the SOURCE key", cap_to: "Press the TARGET key", cap_waiting: "Waiting…",
     none_hotkeys: "No shortcuts yet.", none_remaps: "No remaps yet.", edit: "Edit", err: "Error",
+    no_color: "No colour",
     steps: [
       { t: "Connect and flash", b: "Plug in the macropad and press <b>Flash keyboard</b>. It writes each key's unique code into its memory (they persist without the app)." },
       { t: "Assign actions", b: "In <b>Macropad</b>, click a key or knob and pick what it does: open Spotify, run a script, type text, media… Use <b>Test</b> to see it in action." },
@@ -219,12 +221,25 @@ function applyLang(lang) {
 
 // --- editor modal ---------------------------------------------------------
 let edState = null;
-function openEditor(action, title, onSave) {
-  edState = { work: { type: action.type, params: Object.assign({}, action.params) }, target: action, onSave };
+// binding = control completo (tiene .action y .color). Para los atajos del teclado
+// normal no hay luz, asi que se puede pasar solo la accion.
+function openEditor(binding, title, onSave) {
+  const action = binding.action || binding;
+  const hasColor = !!binding.action;   // solo los controles del macropad tienen luz
+  edState = { work: { type: action.type, params: Object.assign({}, action.params) },
+              target: action, binding: hasColor ? binding : null, onSave };
   $("edTitle").textContent = title;
+  $("edColorRow").style.display = hasColor ? "" : "none";
+  if (hasColor) {
+    const cur = binding.color || "";
+    $("edColor").innerHTML = `<option value="">${tr("no_color")}</option>` +
+      LED_COLOR_KEYS.map((k) => `<option value="${k}" data-color="${LED_HEX[k]}" ${k === cur ? "selected" : ""}>${tr(k)}</option>`).join("");
+  }
   $("edType").innerHTML = ORDER.map((t) => `<option value="${t}" data-color="${TYPE_COLOR[t]}" ${t === action.type ? "selected" : ""}>${tr("type_" + t)}</option>`).join("");
   renderEdFields();
   $("edOverlay").classList.add("show");
+  enhanceIn($("edColorRow"));
+  if (edState.binding) $("edColor")._enh && $("edColor")._enh.sync();
 }
 function renderEdFields() {
   const t = edState.work.type;
@@ -315,8 +330,9 @@ function renderPad() {
     const i = cellIndex(dr, dc, dev.rows, dev.columns, dev.orientation), b = layer.buttons[i];
     if (!b) continue;
     const a = b.action, empty = a.type === "unassigned", col = TYPE_COLOR[a.type];
+    const led = b.color ? `<span class="ledtag" style="background:${LED_HEX[b.color]}" title="${tr(b.color)}"></span>` : "";
     cells += `<div class="key ${empty ? "empty" : ""}" data-key="${i}" style="${empty ? "" : `border-color:${col}`}">
-      <div class="kn">T${i + 1}</div><div class="ic" style="color:${empty ? "var(--muted)" : col}">${svg(a.type)}</div>
+      <div class="kn">T${i + 1}${led}</div><div class="ic" style="color:${empty ? "var(--muted)" : col}">${svg(a.type)}</div>
       <div class="kv">${esc(summary(a))}</div></div>`;
   }
   g.innerHTML = cells;
@@ -426,8 +442,8 @@ function wire() {
   window.addEventListener("resize", () => { if (tourOn) showTourStep(); });
   $("langBtn").onclick = () => applyLang(LANG === "es" ? "en" : "es");
   $("layers").addEventListener("click", (e) => { const t = e.target.closest(".lt"); if (t) { state.layer = +t.dataset.l; renderLayers(); renderLed(); renderPad(); } });
-  $("grid").addEventListener("click", (e) => { const k = e.target.closest(".key"); if (!k) return; const b = state.profile.layers[state.layer].buttons[+k.dataset.key]; openEditor(b.action, `${tr("key_word")} ${+k.dataset.key + 1}`, () => { markDirty(); renderPad(); }); });
-  $("knobs").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; const b = state.profile.layers[state.layer].knobs[+c.dataset.knob][c.dataset.sub]; openEditor(b.action, `${tr("knob_word")} ${+c.dataset.knob + 1}`, () => { markDirty(); renderPad(); }); });
+  $("grid").addEventListener("click", (e) => { const k = e.target.closest(".key"); if (!k) return; const b = state.profile.layers[state.layer].buttons[+k.dataset.key]; openEditor(b, `${tr("key_word")} ${+k.dataset.key + 1}`, () => { markDirty(); renderPad(); }); });
+  $("knobs").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; const b = state.profile.layers[state.layer].knobs[+c.dataset.knob][c.dataset.sub]; openEditor(b, `${tr("knob_word")} ${+c.dataset.knob + 1}`, () => { markDirty(); renderPad(); }); });
   $("ledMode").onchange = setLed; $("ledColor").onchange = setLed;
 
   document.querySelector(".layoutbar").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
@@ -439,7 +455,15 @@ function wire() {
   $("remaps").addEventListener("click", (e) => { const del = e.target.closest("[data-delr]"); if (del) { state.profile.remaps.splice(+del.dataset.delr, 1); markDirty(); renderRemaps(); } });
 
   $("edType").onchange = (e) => { edState.work.type = e.target.value; edState.work.params = {}; renderEdFields(); };
-  $("edSave").onclick = () => { const a = edState.target, w = edState.work; a.type = w.type; a.params = w.params; const cb = edState.onSave; closeEditor(); cb && cb(); };
+  $("edSave").onclick = () => {
+    const a = edState.target, w = edState.work;
+    a.type = w.type; a.params = w.params;
+    if (edState.binding) {
+      const c = $("edColor").value;
+      if (c) edState.binding.color = c; else delete edState.binding.color;
+    }
+    const cb = edState.onSave; closeEditor(); cb && cb();
+  };
   $("edTest").onclick = async () => { const r = await api().test_action(edState.work); toast(r.ok ? tr("executed") : tr("err") + ": " + r.error, r.ok ? "ok" : "err"); };
   $("edCancel").onclick = closeEditor;
 

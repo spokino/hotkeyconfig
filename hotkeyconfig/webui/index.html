@@ -79,6 +79,7 @@
   .key:hover{transform:translateY(-1px)} .key:active{transform:scale(.97)}
   .key.empty{border-style:dashed; color:var(--muted)}
   .key .kn{font-size:10px; color:var(--muted)} .key .ic svg{width:22px; height:22px}
+  .ledtag{display:inline-block; width:7px; height:7px; border-radius:50%; margin-left:4px; vertical-align:middle; border:1px solid rgba(128,128,128,.4)}
   .key .kv{font-size:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 
   h3.sh{font-size:15px; font-weight:600; margin:6px 0 10px; display:flex; align-items:center; gap:8px}
@@ -251,6 +252,11 @@
     <label data-en="Action">Acción</label>
     <select id="edType"></select>
     <div id="edFields"></div>
+    <div id="edColorRow">
+      <label data-en="Colour when pressed">Color al pulsar</label>
+      <select id="edColor"></select>
+      <div style="font-size:11px;color:var(--muted);margin-top:5px" data-en="The keyboard only shows this colour <b>while you press</b>, and goes back to the layer colour. This hardware cannot colour one key on its own.">El teclado se tiñe de este color <b>solo al pulsar</b> y vuelve al color de la capa. Este hardware no puede colorear una tecla suelta.</div>
+    </div>
     <div id="edHint" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
     <div class="actions">
       <button class="btn primary" id="edSave" style="flex:1" data-en="Save">Guardar</button>

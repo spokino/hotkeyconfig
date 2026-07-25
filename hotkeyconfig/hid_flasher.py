@@ -47,6 +47,34 @@ def is_connected(vid: int = VID, pid: int = PID) -> bool:
     return find_programming_path(vid, pid) is not None
 
 
+def set_led(color: str, mode: str = "backlight", layer: int = 0,
+            vid: int = VID, pid: int = PID) -> None:
+    """Change ONLY the lighting, without rewriting the key bindings (about 20 ms).
+
+    Used for the press feedback: the whole keyboard takes the colour of the control
+    you pressed and goes back to the layer colour right after. Writing the bindings
+    too would take far too long for that.
+    """
+    import hid
+
+    path = find_programming_path(vid, pid)
+    if path is None:
+        raise HidFlasherError("keyboard not connected")
+
+    code = protocol.led_code(mode, color)
+    messages = [
+        bytes([0x03, 0xFE, 0xB0, layer + 1, 0x08, 0, 0, 0, 0, 0, 0x01, 0, code]),
+        bytes([0x03, 0xFD, 0xFE, 0xFF]),
+    ]
+    dev = hid.device()
+    dev.open_path(path)
+    try:
+        for msg in messages:
+            dev.write(msg + bytes(protocol.MSG_LEN - len(msg)) + b"\x00")
+    finally:
+        dev.close()
+
+
 def flash(profile: Profile, vid: int = VID, pid: int = PID, inter_delay: float = 0.002) -> int:
     """Write the profile into the keyboard over HID. Returns how many messages were sent."""
     import hid

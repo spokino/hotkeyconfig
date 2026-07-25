@@ -114,6 +114,39 @@ code = (color << 4) | mode
 - Special case: **backlight + white** is `5`, not `(0 << 4) | 1`.
 - `off` is always `0`, whatever the color.
 
+## Per-key colours: what is and is not possible
+
+Short answer for the k884x: **you cannot give each key its own colour**. The message above
+carries a single code byte for the whole layer, and there is no field anywhere for a key
+number. This is not a limitation of this project: the vendor's own Windows software only
+sends mode plus colour per layer, as shown by the USB captures in
+[issue #160](https://github.com/kriomant/ch57x-keyboard-tool/issues/160) upstream.
+
+It is easy to assume otherwise, because the `press` mode does light up **only the key you
+pressed**. But that decision is made by the keyboard's firmware, not by you: you send one
+colour and the firmware picks which LED to light. You never send a key number.
+
+Per-key RGB does exist in this family, on the **K8850** (`514c:8850`, 16 keys and 3 knobs),
+which uses a completely different LED packet with 3 bytes of true RGB for every key:
+
+```
+[0x03, 0xFE, 0xB0, layer, mode, R, G, B, 16x per-key RGB]
+```
+
+That is a different model and a different protocol, so supporting it means writing a new
+backend, not tweaking this one.
+
+### What hotkeyconfig does instead
+
+Since every control sends a **unique combo**, the listener knows exactly which one you
+pressed, and changing the lighting takes about 20 ms (only the two LED messages, no key
+rebinding). So a control can carry a `color`, and when you trigger it the **whole keyboard**
+takes that colour for half a second and then returns to the layer colour.
+
+It is press feedback, not a static per-key colour, and it needs the listener running. It
+also needs the layer to have lighting configured, since otherwise there is no colour to
+return to.
+
 ## Why unique combos at all
 
 The keyboard sends **standard HID keystrokes**. Nothing in a keypress says "this came from key 7 of

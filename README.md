@@ -41,6 +41,10 @@ desktop app that programs the keyboard **over native Windows HID**, then runs yo
 - ⌨️ **Your normal keyboard too**: record any combo (say `Ctrl+Alt+S`) and bind an action to it, and
   **remap single keys** (`Caps Lock` to `Esc`).
 - 🌈 **RGB lighting**: color and mode (solid, on press, wave) per layer, written into the keyboard.
+- 💡 **Colour feedback per action**: give a control a colour and the keyboard flashes it when you
+  press it, then goes back to the layer colour. Note this is **only while pressing**: the ch57x
+  cannot hold a different colour on each key (see [docs/PROTOCOL.md](docs/PROTOCOL.md)), and it
+  needs the listener running.
 - 🧩 **Configurable layout**: rows, columns, knobs and orientation, so it fits other ch57x models.
 - 🖥️ **Real desktop app**: visual editor, light/dark theme that follows your system, English and
   Spanish, start with Windows, installer and **automatic updates**.
@@ -193,6 +197,17 @@ Profile example: [`config/profile.example.yaml`](config/profile.example.yaml). P
 [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
 ---
+
+## 🧭 Roadmap
+
+- **More keyboards.** Today only the ch57x family (`1189:8842`, k884x) is supported, because the
+  configuration protocol is specific to each model. The next one is the **K8850**
+  (`514c:8850`, 16 keys and 3 knobs), which is interesting on its own: it does support **true
+  per-key RGB**, something the k884x cannot do at all.
+- **Code signing**, to drop the SmartScreen warning.
+
+Got a different macropad and want it supported? Open an issue with its USB id (`hotkeyconfig
+detect`) and, if you can, a USB capture of the vendor software configuring it.
 
 ## 📄 License and credits
 
