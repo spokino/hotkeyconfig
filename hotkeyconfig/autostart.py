@@ -1,8 +1,8 @@
-"""Arranque automático en Windows: la app de bandeja se inicia sola al entrar.
+"""Start with Windows: the tray app launches on its own when you log in.
 
-Crea un acceso directo en la carpeta de Inicio del usuario que ejecuta
-``pythonw -m hotkeyconfig run`` (sin ventana de consola). Así, con el teclado
-conectado, las configuraciones se aplican solas sin abrir nada a mano.
+Creates a shortcut in the user's Startup folder that runs
+``pythonw -m hotkeyconfig run`` (no console window). That way, with the keyboard
+plugged in, your bindings work without opening anything by hand.
 """
 
 from __future__ import annotations
@@ -28,12 +28,12 @@ def is_installed() -> bool:
 
 
 def install(profile: str | None = None) -> Path:
-    """Crea el acceso directo de arranque. Devuelve su ruta."""
+    """Create the startup shortcut. Returns its path."""
     try:
-        import win32com.client  # de pywin32
+        import win32com.client  # from pywin32
     except ImportError as exc:
         raise RuntimeError(
-            "El arranque automático necesita pywin32 (pip install pywin32)."
+            "Autostart needs pywin32 (pip install pywin32)."
         ) from exc
 
     exe, prefix = app_target()
@@ -50,13 +50,13 @@ def install(profile: str | None = None) -> Path:
     sc.TargetPath = exe
     sc.Arguments = args
     sc.WorkingDirectory = str(Path(__file__).resolve().parent.parent)
-    sc.Description = "hotkeyconfig — listener de macropad (local y privado)"
+    sc.Description = "hotkeyconfig: macropad listener (local and private)"
     sc.Save()
     return lnk
 
 
 def uninstall() -> bool:
-    """Elimina el acceso directo de arranque. Devuelve True si existía."""
+    """Remove the startup shortcut. Returns True if it existed."""
     lnk = shortcut_path()
     if lnk.exists():
         lnk.unlink()

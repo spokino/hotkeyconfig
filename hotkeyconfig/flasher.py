@@ -1,8 +1,9 @@
-"""Puente con ``ch57x-keyboard-tool``: traduce el perfil y lo graba en el teclado.
+"""Bridge to ``ch57x-keyboard-tool``: translates the profile and writes it to the keyboard.
 
-No reimplementamos el protocolo USB: generamos el YAML que entiende la
-herramienta open source y se lo pasamos por stdin a sus subcomandos
-``validate`` y ``upload``.
+This is the OPTIONAL backend. The default path is native HID (see hid_flasher.py),
+which needs no external binary. Here the USB protocol is not reimplemented: we
+generate the YAML that the open source tool understands and pipe it to its
+``validate`` and ``upload`` subcommands over stdin.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ import yaml
 from . import combos
 from .profile import Action, Profile
 
-# Acciones "nativas" amistosas -> token multimedia de ch57x.
+# Friendly "native" action names -> ch57x media tokens.
 _NATIVE_ALIASES = {
     "volume_up": "volumeup",
     "volume_down": "volumedown",
@@ -25,7 +26,7 @@ _NATIVE_ALIASES = {
     "previous": "prev",
 }
 
-# Rutas donde buscar el binario si no está en el PATH.
+# Where to look for the binary when it is not on PATH.
 _CANDIDATE_DIRS = [
     Path.home() / ".cargo" / "bin",
     Path(__file__).resolve().parent.parent / "vendor",
@@ -37,7 +38,7 @@ class FlasherError(RuntimeError):
 
 
 def find_binary() -> str:
-    """Localiza el ejecutable ch57x-keyboard-tool o lanza un error claro."""
+    """Locate the ch57x-keyboard-tool executable, or raise a clear error."""
     exe = "ch57x-keyboard-tool"
     found = shutil.which(exe) or shutil.which(exe + ".exe")
     if found:
@@ -48,14 +49,14 @@ def find_binary() -> str:
             if cand.exists():
                 return str(cand)
     raise FlasherError(
-        "No encuentro 'ch57x-keyboard-tool'. Instálalo con:\n"
+        "Cannot find 'ch57x-keyboard-tool'. Install it with:\n"
         "    cargo install ch57x-keyboard-tool --locked\n"
-        "o coloca el binario en ./vendor/."
+        "or drop the binary into ./vendor/."
     )
 
 
 def _ch57x_key(action: Action, combo: str) -> str:
-    """Token de ch57x para un control: la tecla nativa o el combo único."""
+    """ch57x token for one control: either the native key or the unique combo."""
     if action.type == "native":
         key = action.params.get("key", "")
         return _NATIVE_ALIASES.get(key, key)
@@ -63,7 +64,7 @@ def _ch57x_key(action: Action, combo: str) -> str:
 
 
 def build_config(profile: Profile) -> dict:
-    """Construye el dict de configuración en el formato exacto de ch57x 1.7.0."""
+    """Build the configuration dict in the exact format of ch57x 1.7.0."""
     dev = profile.device
     cfg: dict = {
         "orientation": "normal",
@@ -73,7 +74,7 @@ def build_config(profile: Profile) -> dict:
         "layers": [],
     }
     for layer in profile.layers:
-        # 12 botones planos -> filas x columnas (orden row-major).
+        # Flat button list -> rows x columns (row major order).
         flat = [_ch57x_key(b.action, b.combo) for b in layer.buttons]
         rows = [
             flat[r * dev.columns : (r + 1) * dev.columns]
@@ -107,17 +108,17 @@ def _run_tool(args: list[str], config_yaml: str) -> subprocess.CompletedProcess:
 
 
 def validate(profile: Profile) -> None:
-    """Valida el mapeo con la propia herramienta antes de grabar."""
+    """Validate the mapping with the tool itself before writing anything."""
     result = _run_tool(["validate"], to_yaml(profile))
     if result.returncode != 0:
-        raise FlasherError(f"validate falló:\n{result.stderr or result.stdout}")
+        raise FlasherError(f"validate failed:\n{result.stderr or result.stdout}")
 
 
 def flash(profile: Profile) -> str:
-    """Valida y graba el perfil en el teclado. Devuelve la salida de la herramienta."""
+    """Validate and write the profile to the keyboard. Returns the tool's output."""
     profile.validate()
     validate(profile)
     result = _run_tool(["upload"], to_yaml(profile))
     if result.returncode != 0:
-        raise FlasherError(f"upload falló:\n{result.stderr or result.stdout}")
+        raise FlasherError(f"upload failed:\n{result.stderr or result.stdout}")
     return result.stdout or "OK"

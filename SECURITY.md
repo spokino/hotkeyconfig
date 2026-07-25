@@ -1,63 +1,69 @@
-# Seguridad
+# Security
 
-`hotkeyconfig` instala dependencias y usa un **hook global de teclado**: una zona
-sensible. Estos son los compromisos del proyecto.
+`hotkeyconfig` installs dependencies and uses a **global keyboard hook**, which is a sensitive
+area. These are the project's commitments.
 
-## El listener NO es un keylogger
+## The listener is NOT a keylogger
 
-- Solo reacciona a los **combos `F13`–`F24` configurados** en tu `profile.yaml`.
-- **No** registra, almacena ni transmite tus pulsaciones normales.
-- **No** hace ninguna llamada de red. No hay telemetría.
-- Todo el código es open source y auditable (`hotkeyconfig/runtime.py`,
-  `actions.py`).
+- It only reacts to the **`F13` to `F24` combos configured** in your `profile.yaml`.
+- It does **not** record, store or transmit your normal keystrokes.
+- It makes **no** network calls. There is no telemetry.
+- All the code is open source and auditable (`hotkeyconfig/runtime.py`, `actions.py`).
 
-## Dependencias legítimas y verificadas
+## Updates
 
-- **Camino por defecto = Python puro**: el flasheo va por **HID nativo** (`hidapi`),
-  sin Rust ni binarios externos. El protocolo está portado byte a byte (auditable)
-  desde ch57x; se escribe únicamente en la interfaz de programación `MI_00`.
-- **Dependencias Python**: mínimas y solo de **PyPI** oficial
-  (`PyYAML`, `keyboard`, `pystray`, `Pillow`, `hidapi`, `pywin32`).
-- **`ch57x-keyboard-tool`** (backend OPCIONAL): repo público conocido (MIT, autor
-  `kriomant`). Si se usa, instalar desde **crates.io** con `--locked` y auditar con
-  `cargo audit`.
-- **Auditoría**: `pip-audit` (Python) y `cargo audit` (árbol de ch57x) deben
-  pasar sin vulnerabilidades conocidas antes de publicar.
+The updater (`hotkeyconfig/updater.py`) is the only component that uses the network:
+
+- It only talks to **GitHub over HTTPS** (the release API and the release assets). Any other host
+  is rejected.
+- The downloaded installer's **SHA256 is verified against the published `SHA256SUMS.txt`** before
+  anything is executed.
+- It never updates silently on its own: the app shows a banner and you decide.
+
+## Legitimate, verified dependencies
+
+- **Default path is pure Python**: flashing goes over **native HID** (`hidapi`), with no Rust and no
+  external binaries. The protocol is ported byte for byte (and therefore auditable) from ch57x, and
+  is written only to the `MI_00` programming interface.
+- **Python dependencies**: minimal and from the official **PyPI** only (`PyYAML`, `keyboard`,
+  `pystray`, `Pillow`, `hidapi`, `pywebview`, `pywin32`).
+- **`ch57x-keyboard-tool`** (OPTIONAL backend): a well known public repo (MIT, by `kriomant`). If
+  used, install from **crates.io** with `--locked` and audit with `cargo audit`.
+- **Auditing**: `pip-audit` (Python) and `cargo audit` (ch57x tree) must pass with no known
+  vulnerabilities before publishing.
 
 ```bash
-pip-audit                 # deps Python
-cargo audit               # deps de ch57x-keyboard-tool
+pip-audit                 # Python dependencies
+cargo audit               # dependencies of ch57x-keyboard-tool
 ```
 
-### Estado de auditoría (2026-06-21)
+### Audit status (2026-06-21)
 
-- **`pip-audit`**: sin vulnerabilidades conocidas en las dependencias Python.
-- **`cargo audit`** sobre el árbol de `ch57x-keyboard-tool` 1.7.0 (105 crates):
-  3 avisos, **todos en dependencias transitivas de la herramienta**, ninguno en
-  código de este proyecto:
-  - `RUSTSEC-2026-0009` (`time`, medium 6.8): DoS por agotamiento de pila al
-    **parsear cadenas de tiempo no confiables**. No aplica a nuestro uso: solo le
-    pasamos YAML generado por nosotros y la herramienta corre bajo demanda en local.
-  - `RUSTSEC-2024-0370` (`proc-macro-error`): crate de build sin mantenimiento.
-  - `RUSTSEC-2023-0075` (`unsafe-libyaml`): escritura desalineada solo en
-    plataformas de **32/16 bits** (no afecta a Windows x64).
-- Conclusión: `ch57x-keyboard-tool` es legítimo (repo MIT conocido) y sin puertas
-  traseras; los avisos son de bajo riesgo en su árbol upstream. Se recomienda
-  reportarlos/actualizar upstream cuando publiquen una versión con `time>=0.3.47`.
+- **`pip-audit`**: no known vulnerabilities in the Python dependencies.
+- **`cargo audit`** over the `ch57x-keyboard-tool` 1.7.0 tree (105 crates): 3 advisories, **all of
+  them in transitive dependencies of that tool**, none in this project's code:
+  - `RUSTSEC-2026-0009` (`time`, medium 6.8): stack exhaustion DoS when **parsing untrusted time
+    strings**. Does not apply to our usage: we only hand it YAML we generated ourselves, and the
+    tool runs locally on demand.
+  - `RUSTSEC-2024-0370` (`proc-macro-error`): unmaintained build crate.
+  - `RUSTSEC-2023-0075` (`unsafe-libyaml`): misaligned write, only on **32/16 bit** platforms (does
+    not affect Windows x64).
+- Conclusion: `ch57x-keyboard-tool` is legitimate (a known MIT repo) and free of backdoors; the
+  advisories are low risk and live in its upstream tree. Worth reporting upstream or updating when
+  they publish a version with `time>=0.3.47`.
 
-## Sin secretos en el repositorio
+## No secrets in the repository
 
-- Nunca se versionan API keys ni rutas privadas.
-- Tu `config/profile.yaml` real está en `.gitignore`; solo se publica
-  `config/profile.example.yaml`.
+- API keys and private paths are never committed.
+- Your real `config/profile.yaml` is in `.gitignore`; only `config/profile.example.yaml` is
+  published.
 
-## Ejecución de scripts del usuario
+## Running your scripts
 
-Las acciones `run` ejecutan **lo que tú defines** en tu propio `profile.yaml`,
-en local y bajo tu control. La app **no** descarga ni evalúa código de fuentes
-externas.
+`run` actions execute **what you define** in your own `profile.yaml`, locally and under your
+control. The app does **not** download or evaluate code from external sources.
 
-## Reportar una vulnerabilidad
+## Reporting a vulnerability
 
-Abre un *issue* privado o contacta al mantenedor. No publiques detalles
-explotables hasta que exista un parche.
+Open a private issue or contact the maintainer. Please do not publish exploitable details until a
+patch exists.

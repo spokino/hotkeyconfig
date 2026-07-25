@@ -1,8 +1,9 @@
-"""Cómo re-invocar la propia app, funcione como script o como .exe congelado.
+"""How to re-invoke the app itself, whether it runs as a script or as a frozen .exe.
 
-En desarrollo la app se relanza con `pythonw -m hotkeyconfig <args>`. Empaquetada
-con PyInstaller, `-m hotkeyconfig` no existe: hay que llamar al propio ejecutable
-con los argumentos del subcomando. Este helper devuelve la orden correcta en cada caso.
+In development the app relaunches with `pythonw -m hotkeyconfig <args>`. Once
+packaged with PyInstaller, `-m hotkeyconfig` does not exist: the executable has to
+be called with the subcommand arguments. This helper returns the right command for
+each case.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ def is_frozen() -> bool:
 
 
 def app_command(*args: str) -> list[str]:
-    """Orden para lanzar un subcomando de la app (p. ej. app_command('run', '--no-tray'))."""
+    """Command that launches an app subcommand (e.g. app_command('run', '--no-tray'))."""
     if is_frozen():
         return [sys.executable, *args]
     pyw = Path(sys.executable).with_name("pythonw.exe")
@@ -25,7 +26,7 @@ def app_command(*args: str) -> list[str]:
 
 
 def app_target() -> tuple[str, str]:
-    """(ejecutable, prefijo de argumentos) para accesos directos de Windows."""
+    """(executable, argument prefix) for Windows shortcuts."""
     if is_frozen():
         return sys.executable, ""
     pyw = Path(sys.executable).with_name("pythonw.exe")

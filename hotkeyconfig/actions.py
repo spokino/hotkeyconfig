@@ -1,9 +1,9 @@
-"""Ejecutores de acciones del runtime.
+"""Action executors used by the runtime.
 
-Cada acción del ``profile.yaml`` se traduce aquí en algo concreto: lanzar un
-script, abrir una app/URL, escribir texto, enviar una tecla multimedia, etc.
-Las acciones ``native`` (grabadas en el propio teclado) y ``unassigned`` no
-pasan por aquí en condiciones normales; se tratan como no-op por seguridad.
+Every action in ``profile.yaml`` is turned into something concrete here: launching
+a script, opening an app or URL, typing text, sending a media key and so on.
+``native`` actions (stored in the keyboard itself) and ``unassigned`` ones do not
+normally reach this module; they are treated as no-ops for safety.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from typing import Any
 
 log = logging.getLogger("hotkeyconfig.actions")
 
-# Nombres amistosos -> nombres de la librería `keyboard`.
+# Friendly names -> names used by the `keyboard` library.
 _MEDIA_KEYS = {
     "volume_up": "volume up",
     "volume_down": "volume down",
@@ -31,15 +31,15 @@ _MEDIA_KEYS = {
 
 
 def execute(action) -> None:
-    """Ejecuta una :class:`~hotkeyconfig.profile.Action`. Nunca lanza: registra."""
+    """Run an :class:`~hotkeyconfig.profile.Action`. Never raises: it logs instead."""
     try:
         handler = _HANDLERS.get(action.type)
         if handler is None:
-            log.warning("tipo de accion sin ejecutor: %s", action.type)
+            log.warning("action type with no executor: %s", action.type)
             return
         handler(action.params)
-    except Exception:  # noqa: BLE001 - una acción no debe tumbar el runtime
-        log.exception("fallo ejecutando accion %s", action.type)
+    except Exception:  # noqa: BLE001 - one action must not take the runtime down
+        log.exception("failed running action %s", action.type)
 
 
 def _run(p: dict[str, Any]) -> None:
@@ -47,18 +47,18 @@ def _run(p: dict[str, Any]) -> None:
     args = p.get("args")
     cwd = p.get("cwd")
     shell = bool(p.get("shell", False))
-    if args:  # forma segura: lista de argumentos, sin shell
+    if args:  # safe form: argument list, no shell
         subprocess.Popen(args, cwd=cwd)
     elif cmd:
         subprocess.Popen(cmd, cwd=cwd, shell=shell)
     else:
-        log.warning("accion 'run' sin 'cmd' ni 'args'")
+        log.warning("'run' action without 'cmd' or 'args'")
 
 
 def _open(p: dict[str, Any]) -> None:
     target = p.get("target", "")
     if not target:
-        log.warning("accion 'open' sin 'target'")
+        log.warning("'open' action without 'target'")
         return
     if target.startswith(("http://", "https://")):
         webbrowser.open(target)
@@ -67,7 +67,7 @@ def _open(p: dict[str, Any]) -> None:
 
 
 def _text(p: dict[str, Any]) -> None:
-    import keyboard  # import perezoso: solo se necesita en runtime
+    import keyboard  # lazy import: only needed at runtime
     text = p.get("text", "")
     keyboard.write(text, delay=p.get("delay", 0))
 
@@ -91,7 +91,7 @@ def _window(p: dict[str, Any]) -> None:
         import win32con
         import win32gui
     except ImportError:
-        log.warning("acciones 'window' requieren pywin32 (pip install pywin32)")
+        log.warning("'window' actions need pywin32 (pip install pywin32)")
         return
     do = p.get("do", "")
     hwnd = win32gui.GetForegroundWindow()
@@ -105,11 +105,11 @@ def _window(p: dict[str, Any]) -> None:
     elif do == "close":
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
     else:
-        log.warning("operacion de ventana desconocida: %s", do)
+        log.warning("unknown window operation: %s", do)
 
 
 def _sequence(p: dict[str, Any]) -> None:
-    from .profile import Action  # import perezoso para evitar ciclo
+    from .profile import Action  # lazy import to avoid a cycle
     for step in p.get("steps", []):
         execute(Action.from_dict(step))
         delay = step.get("delay")
@@ -129,6 +129,6 @@ _HANDLERS = {
     "hotkey": _hotkey,
     "window": _window,
     "sequence": _sequence,
-    "native": _noop,      # lo gestiona el hardware
+    "native": _noop,      # handled by the hardware itself
     "unassigned": _noop,
 }

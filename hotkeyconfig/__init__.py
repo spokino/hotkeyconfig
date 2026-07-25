@@ -1,8 +1,9 @@
-"""hotkeyconfig: programa macropads ch57x y asígnales scripts/atajos.
+"""hotkeyconfig: program ch57x macropads and bind scripts and shortcuts to every key.
 
-App open source que une dos piezas ya probadas: ``ch57x-keyboard-tool`` para
-grabar combos únicos en el teclado, y un listener propio que escucha esos
-combos y ejecuta acciones (scripts, apps, texto, multimedia, ventanas…).
+Open source app made of two halves: a flasher that writes unique combos into the
+keyboard's own memory over native HID (the ch57x-keyboard-tool binary stays as an
+optional alternative backend), and a local listener that watches for those combos
+and runs actions (scripts, apps, text, media, windows and so on).
 """
 
 __version__ = "0.3.1"

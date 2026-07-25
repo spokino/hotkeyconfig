@@ -1,7 +1,8 @@
-"""Configurador gráfico moderno (pywebview + WebView2).
+"""Modern visual configurator (pywebview + WebView2).
 
-Renderiza la interfaz web de ``webui/`` en una ventana nativa y expone un puente
-con Python (``Api``) para leer/guardar el perfil, flashear y manejar el listener.
+Renders the web interface from ``webui/`` inside a native window and exposes a
+bridge to Python (``Api``) to read and save the profile, flash the keyboard and
+drive the listener.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ class Api:
         self.profile_path = Path(profile_path)
         self.listener: subprocess.Popen | None = None
 
-    # --- perfil ---------------------------------------------------------
+    # --- profile ---------------------------------------------------------
     def get_profile(self) -> dict:
         if self.profile_path.exists():
             return load(self.profile_path).to_dict()
@@ -47,14 +48,14 @@ class Api:
             prof.validate()
             save(prof, self.profile_path)
             if not hid_flasher.is_connected():
-                return {"ok": False, "error": "No veo el teclado conectado."}
+                return {"ok": False, "error": "I cannot see the keyboard connected."}
             n = hid_flasher.flash(prof)
             return {"ok": True, "n": n}
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
     def test_action(self, action_dict: dict) -> dict:
-        """Ejecuta una acción una vez, para probarla desde la GUI."""
+        """Run an action once, so it can be tested from the GUI."""
         try:
             from . import actions
             from .profile import Action
@@ -64,7 +65,7 @@ class Api:
             return {"ok": False, "error": str(exc)}
 
     def resize_layout(self, current: dict, rows: int, columns: int, knobs: int, orientation: str) -> dict:
-        """Cambia la estructura conservando acciones, luz y atajos (regenera combos)."""
+        """Change the layout keeping actions, lighting and shortcuts (combos are regenerated)."""
         from .cli import build_default_profile
         from .profile import Device, Profile
         old = Profile.from_dict(current)
@@ -87,7 +88,7 @@ class Api:
         save(new, self.profile_path)
         return new.to_dict()
 
-    # --- estado / listener ---------------------------------------------
+    # --- status / listener -----------------------------------------------
     def check_update(self) -> dict:
         from . import updater
         return updater.check_for_update()
@@ -133,9 +134,9 @@ def run(profile_path: str | Path) -> int:
         width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )
-    # private_mode=False para que el localStorage (idioma, etc.) persista entre sesiones;
-    # con el modo privado por defecto se borraba al cerrar. storage_path en una carpeta
-    # de usuario escribible (no en el directorio del programa, que puede ser de solo lectura).
+    # private_mode=False so localStorage (language and so on) survives between sessions;
+    # with the default private mode it was wiped on close. storage_path points at a
+    # writable user folder (not the program directory, which can be read only).
     storage = os.path.join(os.environ.get("LOCALAPPDATA") or str(Path.home()), "hotkeyconfig", "webview")
     webview.start(private_mode=False, storage_path=storage)
     return 0

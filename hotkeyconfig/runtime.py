@@ -1,9 +1,9 @@
-"""Runtime: escucha los combos únicos y dispara las acciones.
+"""Runtime: listens for the unique combos and fires the actions.
 
-Detalle clave del diseño: como TODOS los combos (las 3 capas) son únicos, el
-runtime no necesita seguir el estado de capa. El teclado conmuta de capa por
-hardware y envía el combo correspondiente; aquí cada combo es un atajo global
-independiente. Las acciones ``native``/``unassigned`` no se registran.
+Key design detail: because EVERY combo (across all layers) is unique, the runtime
+never needs to track the active layer. The keyboard switches layer in hardware and
+sends the matching combo; here each combo is just an independent global shortcut.
+``native`` and ``unassigned`` actions are not registered.
 """
 
 from __future__ import annotations
@@ -24,35 +24,35 @@ class Runtime:
         self.paused = False
         self._registered = 0
 
-    # --- ciclo de vida ---------------------------------------------------
+    # --- lifecycle -------------------------------------------------------
     def load(self) -> int:
-        """(Re)carga el perfil y registra los atajos. Devuelve cuántos registró."""
+        """(Re)load the profile and register the shortcuts. Returns how many were registered."""
         import keyboard
 
         combos.assert_unique()
         self.profile = load(self.profile_path)
-        # `keyboard` lanza AttributeError si aún no hay listener (primer arranque).
-        # unhook_all() limpia atajos Y remapeos previos (para recargar en caliente).
+        # `keyboard` raises AttributeError when there is no listener yet (first run).
+        # unhook_all() clears previous shortcuts AND remaps (so reloading works hot).
         try:
             keyboard.unhook_all()
         except (AttributeError, KeyError):
             pass
         self._registered = 0
 
-        # 1) Controles del macropad (combos únicos F13-F24).
+        # 1) Macropad controls (the unique F13 to F24 combos).
         for label, binding in self.profile.iter_bindings():
             action = binding.action
             if action.type in ("native", "unassigned"):
                 continue
             self._register(keyboard, combos.to_keyboard(binding.combo), label, action)
 
-        # 2) Atajos del teclado normal que el usuario grabó (formato de `keyboard`).
+        # 2) Normal keyboard shortcuts recorded by the user (`keyboard` format).
         for i, binding in enumerate(self.profile.hotkeys, start=1):
             if binding.action.type in ("unassigned", "native"):
                 continue
-            self._register(keyboard, binding.combo, f"atajo{i}", binding.action)
+            self._register(keyboard, binding.combo, f"shortcut{i}", binding.action)
 
-        # 3) Remapeos de teclas sueltas (tecla origen -> tecla destino).
+        # 3) Single key remaps (source key -> target key).
         for r in self.profile.remaps:
             src, dst = r.get("from"), r.get("to")
             if not src or not dst:
@@ -61,9 +61,9 @@ class Runtime:
                 keyboard.remap_key(src, dst)
                 self._registered += 1
             except Exception:  # noqa: BLE001
-                log.exception("no pude remapear %s -> %s", src, dst)
+                log.exception("could not remap %s -> %s", src, dst)
 
-        log.info("registrados %d atajos/remapeos desde %s", self._registered, self.profile_path)
+        log.info("registered %d shortcuts/remaps from %s", self._registered, self.profile_path)
         return self._registered
 
     def _register(self, keyboard, hotkey: str, label: str, action) -> None:
@@ -74,32 +74,32 @@ class Runtime:
             )
             self._registered += 1
         except Exception:  # noqa: BLE001
-            log.exception("no pude registrar %s (%s)", hotkey, label)
+            log.exception("could not register %s (%s)", hotkey, label)
 
     def reload(self) -> int:
-        log.info("recargando configuracion…")
+        log.info("reloading configuration…")
         return self.load()
 
     def _make_callback(self, label: str, action):
         def _cb():
             if self.paused:
                 return
-            log.debug("disparo %s -> %s", label, action.type)
+            log.debug("fired %s -> %s", label, action.type)
             actions.execute(action)
         return _cb
 
     def set_paused(self, value: bool) -> None:
         self.paused = value
-        log.info("runtime %s", "en pausa" if value else "activo")
+        log.info("runtime %s", "paused" if value else "active")
 
     def run_forever(self) -> None:
-        """Bloquea el hilo actual escuchando hasta que se pulse ESC+salir o se cierre."""
+        """Block the current thread, listening until the process is stopped."""
         import keyboard
 
         if self.profile is None:
             self.load()
-        log.info("hotkeyconfig en marcha (%d atajos). Ctrl+C para salir.", self._registered)
-        keyboard.wait()  # bloquea indefinidamente
+        log.info("hotkeyconfig running (%d shortcuts). Ctrl+C to quit.", self._registered)
+        keyboard.wait()  # blocks indefinitely
 
     def stop(self) -> None:
         import keyboard
@@ -108,4 +108,4 @@ class Runtime:
             keyboard.unhook_all()
         except (AttributeError, KeyError):
             pass
-        log.info("runtime detenido")
+        log.info("runtime stopped")

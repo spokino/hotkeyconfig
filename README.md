@@ -1,93 +1,181 @@
-<p align="center">
-  <img src="branding/logo-256.png" alt="hotkeyconfig" width="128" height="128">
+<div align="center">
+
+<img src="branding/logo-256.png" alt="hotkeyconfig" width="120" height="120" />
+
+# hotkeyconfig
+
+**Every key, your way.** Turn a cheap AliExpress macropad into a control panel where **every key runs whatever you want**.
+
+🌍 English · [Español](README.es.md)
+
+<p>
+  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Mun1to/hotkeyconfig?label=version&style=for-the-badge&color=0B4FA4" alt="Latest release" />
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-0B4FA4?style=for-the-badge" alt="MIT license" />
+  </a>
+  <a href="SECURITY.md">
+    <img src="https://img.shields.io/badge/no%20drivers-no%20Zadig-22c55e?style=for-the-badge" alt="No drivers, no Zadig" />
+  </a>
 </p>
 
-<h1 align="center">hotkeyconfig</h1>
-
-<p align="center">
-  Convierte un macropad chino de 20 € en un panel de atajos donde cada tecla ejecuta lo que tú quieras.
+<p>
+  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest/download/hotkeyconfig-setup.exe">
+    <img src="branding/download-button-en.svg" alt="Download hotkeyconfig" width="320" height="72" />
+  </a>
 </p>
 
-<p align="center">
-  <img alt="Licencia MIT" src="https://img.shields.io/badge/licencia-MIT-0B4FA4">
-  <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-0B4FA4">
-  <img alt="Windows" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0B4FA4">
-  <img alt="Sin drivers" src="https://img.shields.io/badge/sin%20Zadig%20%2F%20sin%20Rust-0B4FA4">
-</p>
+</div>
 
-<p align="center">
-  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest/download/hotkeyconfig-setup.exe"><b>Descargar para Windows (instalador)</b></a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/Mun1to/hotkeyconfig/releases/latest">Todas las descargas</a>
-</p>
+---
 
-App **open source** y sencilla para convertir un macropad chino barato (los de
-AliExpress basados en el chip **ch57x**, p. ej. `1189:8842`, de 12 teclas + 2
-perillas + 3 capas) en un panel de atajos donde **cada tecla ejecuta el script
-o la acción que tú quieras**.
+## ✨ What it does
 
-> Programa el teclado **sin el software propietario** que viene en un Google
-> Drive, desde un único archivo de configuración, y con un listener que no es un
-> keylogger (ver [SECURITY.md](SECURITY.md)).
+Those `1189:8842` macropads from AliExpress (12 keys, 2 knobs, 3 layers) ship with proprietary
+software handed out through a Google Drive link. `hotkeyconfig` replaces it with an open source
+desktop app that programs the keyboard **over native Windows HID**, then runs your actions.
 
-## Funciones
+- 🎹 **Every key and knob does what you want**: run scripts, open apps, folders or URLs, type text,
+  control media, send shortcuts, operate windows, or chain several actions in sequence.
+- ⌨️ **Your normal keyboard too**: record any combo (say `Ctrl+Alt+S`) and bind an action to it, and
+  **remap single keys** (`Caps Lock` to `Esc`).
+- 🌈 **RGB lighting**: color and mode (solid, on press, wave) per layer, written into the keyboard.
+- 🧩 **Configurable layout**: rows, columns, knobs and orientation, so it fits other ch57x models.
+- 🖥️ **Real desktop app**: visual editor, light/dark theme that follows your system, English and
+  Spanish, start with Windows, installer and **automatic updates**.
+- 🔒 **Private by design**: no telemetry, no network calls in the listener, and it is **not a
+  keylogger** (see [SECURITY.md](SECURITY.md)).
 
-- **Cada tecla y perilla hace lo que quieras**: ejecutar scripts, abrir apps/carpetas/URLs,
-  escribir texto, controlar multimedia (Spotify, volumen), enviar atajos, operar ventanas o secuencias.
-- **Atajos del teclado normal**: graba cualquier combinación (ej. `Ctrl+Alt+S`) y asígnale una acción,
-  no solo el macropad. Y **remapea teclas** sueltas (ej. `Bloq Mayús → Esc`).
-- **Iluminación RGB**: color y modo de los LEDs (fija, al pulsar, onda) por capa.
-- **Layout configurable**: ajusta filas, columnas, perillas y orientación para tu hardware.
-- **App de escritorio** con configurador visual (tema claro/oscuro), arranque con Windows e instalador.
+---
 
-## ¿Por qué existe?
+## 📸 Screenshots
 
-Estos macropads no exponen un identificador único por tecla: emiten pulsaciones
-HID estándar. Para hacer cada tecla **única** hay que asignarle una combinación
-que ningún teclado físico produce. `hotkeyconfig` usa las teclas fantasma
-`F13`-`F24` con familias de modificadores distintas por capa, generando **54
-combos únicos sin colisión** (12 teclas × 3 capas + 2 perillas × 3 acciones × 3
-capas). Luego un proceso en segundo plano escucha esos combos y ejecuta tu acción.
+<div align="center">
+  <img src="branding/screenshots/en/01-macropad.png" alt="hotkeyconfig main screen" width="820" />
+</div>
 
-### Dos mitades
+<p align="center"><em>Main screen: layers, per layer RGB light, live layout steppers, and every key showing the action bound to it.</em></p>
 
-1. **Grabar los combos únicos en el teclado**, por **HID nativo de Windows**, igual
-   que el software propietario: **sin Zadig, sin drivers, sin Rust**. El protocolo
-   está portado byte a byte desde [`kriomant/ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
-   (que queda como backend alternativo opcional). Como el teclado tiene **memoria
-   interna**, los combos persisten sin ningún software.
-2. **Escuchar los combos y ejecutar acciones**, con un listener local que usa la librería
-   [`keyboard`](https://pypi.org/project/keyboard/), en un icono de bandeja privado
-   que puede **arrancar solo con Windows**.
+| Action editor | Keyboard shortcuts | Interactive guide |
+| :--: | :--: | :--: |
+| <img src="branding/screenshots/en/02-editor.png" alt="Action editor" /> | <img src="branding/screenshots/en/03-shortcuts.png" alt="Global shortcuts and remaps" /> | <img src="branding/screenshots/en/04-guide.png" alt="Interactive guide" /> |
 
-## Instalación
+---
 
-Solo Python 3.11+ (nada de Rust):
+## ⬇️ Download
+
+**[Download the Windows installer](https://github.com/Mun1to/hotkeyconfig/releases/latest/download/hotkeyconfig-setup.exe)**
+or browse [all releases](https://github.com/Mun1to/hotkeyconfig/releases/latest).
+
+The installer does not require administrator rights, creates the shortcuts and offers a checkbox to
+start with Windows. Your configuration lives in `%LOCALAPPDATA%\hotkeyconfig\profile.yaml`.
+
+> Windows SmartScreen may warn about an unknown publisher: the app is not code signed yet. Choose
+> **More info** and then **Run anyway**, or build it yourself from source (instructions below).
+
+## 🔄 Automatic updates
+
+The app checks GitHub Releases and offers the new version in a banner. Updates are downloaded over
+**HTTPS from GitHub only** and their **SHA256 is verified** before anything is executed.
+
+---
+
+## 🎹 Supported hardware
+
+Macropads built on the **ch57x** chip family (also sold as k884x), identified as USB `1189:8842`.
+The common model is **12 keys + 2 knobs + 3 layers**, but the layout is configurable, so other
+sizes work too.
+
+```
+ [ T1 ][ T2 ][ T3 ][ T4 ]      ( K1 )
+ [ T5 ][ T6 ][ T7 ][ T8 ]      ( K2 )
+ [ T9 ][T10 ][T11 ][T12 ]
+   12 keys                2 knobs (turn + click)
+```
+
+Every knob has three actions: turn left, press, turn right.
+
+---
+
+## ⌨️ How to use it
+
+1. **Plug in the macropad** and press **Flash keyboard**. This writes a unique code for every key
+   into the keyboard's own memory. It only has to be done once, and it survives without the app.
+2. **Click any key or knob** and pick what it does. Press **Test** to try it right away.
+3. **Press Start listener** so your actions respond. Enable start with Windows and forget about it.
+
+> The unique part lives **in the keyboard's memory**, so it persists. The listener is only needed to
+> **run your actions**: if it is not running, those actions simply do not fire.
+
+### Action types
+
+| `type` | What it does | Fields |
+|--------|--------------|--------|
+| `run` | Runs a script or command | `cmd` or `args`, `cwd`, `shell` |
+| `open` | Opens an app, folder or URL | `target` |
+| `text` | Types or pastes text | `text` |
+| `media` | Media key, handled by the app | `key` |
+| `hotkey` | Sends a shortcut to the active app | `send` |
+| `window` | Minimize, maximize, restore, close | `do` |
+| `sequence` | Several actions in order | `steps` |
+| `native` | Written into the hardware (volume and so on) | `key` |
+| `unassigned` | Does nothing | (none) |
+
+---
+
+## 🧠 How it works
+
+These macropads do not expose a per key identifier: they send **standard HID keystrokes**, exactly
+like any keyboard. To make each key **unique** it has to send a combo no physical keyboard produces.
+
+`hotkeyconfig` uses the phantom keys `F13` to `F24` with a different modifier family per layer,
+which yields **54 collision free combos** (12 keys x 3 layers, plus 2 knobs x 3 actions x 3 layers).
+A local listener maps every combo to your action. Because each combo is unique, the runtime never
+needs to track which layer is active: the hardware already switched it.
+
+So the project is two halves:
+
+1. **Writing the combos into the keyboard**, over **native Windows HID**, the same way the
+   proprietary tool does: **no Zadig, no drivers, no Rust**. The protocol is ported byte for byte
+   from [`kriomant/ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool), which
+   remains available as an optional alternative backend.
+2. **Listening for those combos and running actions**, with a local listener built on the
+   [`keyboard`](https://pypi.org/project/keyboard/) library, living in a tray icon.
+
+---
+
+## 🔒 Privacy
+
+- The listener **only** reacts to the configured `F13` to `F24` combos.
+- It does **not** record, store or transmit your normal keystrokes, and makes **no** network calls.
+- The updater is the only component that talks to the network, and only to GitHub.
+
+Full detail, dependency policy and audit status in [SECURITY.md](SECURITY.md).
+
+---
+
+## 🛠️ For developers
+
+Python 3.11+ is all you need (no Rust):
 
 ```bash
 python -m venv .venv
 .venv\Scripts\pip install -e .
 ```
 
-## Uso
+Command line:
 
 ```bash
-hotkeyconfig detect              # ¿teclado conectado?
-hotkeyconfig generate            # crea config/profile.yaml con 54 combos únicos
-#   …edita profile.yaml y asigna acciones a tus teclas…
-hotkeyconfig flash               # graba los combos en la memoria del teclado (HID)
-hotkeyconfig run                 # escucha y ejecuta (icono en la bandeja)
-hotkeyconfig autostart install   # que arranque solo al encender Windows
+hotkeyconfig detect              # is the keyboard connected?
+hotkeyconfig generate            # create config/profile.yaml with the unique combos
+hotkeyconfig flash               # write the combos into the keyboard's memory
+hotkeyconfig run                 # listen and execute (tray icon)
+hotkeyconfig gui                 # open the visual configurator
+hotkeyconfig autostart install   # start with Windows
 ```
 
-> La parte "única" de las teclas vive en la **memoria del teclado** (flasheo una vez,
-> persiste). El listener solo hace falta para **ejecutar tus acciones**; es local y
-> privado, y si no está de fondo simplemente esas acciones no se disparan.
-
-## Compilar el ejecutable (.exe)
-
-Genera una app de Windows autónoma (sin necesitar Python) e instalador, con
-PyInstaller + Inno Setup:
+Build the standalone app and the installer (PyInstaller + Inno Setup):
 
 ```bash
 .venv\Scripts\pip install -e ".[dev]"
@@ -95,63 +183,21 @@ PyInstaller + Inno Setup:
 .venv\Scripts\python scripts/build.py --installer  # + dist\hotkeyconfig-<version>-setup.exe
 ```
 
-El instalador no pide administrador, crea accesos directos y una casilla para
-arrancar con Windows. La configuración del usuario se guarda en
-`%LOCALAPPDATA%\hotkeyconfig\profile.yaml`.
+Regenerate the README screenshots (opens the app with a demo profile, never touches yours):
 
-## Tipos de acción
-
-| `type` | Qué hace | Campos |
-|--------|----------|--------|
-| `run` | Lanza script/comando | `cmd` o `args`, `cwd`, `shell` |
-| `open` | Abre app, carpeta o URL | `target` |
-| `text` | Escribe/pega texto | `text` |
-| `media` | Tecla multimedia (vía app) | `key` |
-| `hotkey` | Manda un atajo a la app activa | `send` |
-| `window` | Minimiza/maximiza/cierra (pywin32) | `do` |
-| `sequence` | Varias acciones en orden | `steps` |
-| `native` | Se graba en el HW (volumen…) | `key` |
-| `unassigned` | Sin asignar | (ninguno) |
-
-Ejemplo (`config/profile.example.yaml`):
-
-```yaml
-layers:
-  - name: "Capa 1"
-    buttons:
-      - combo: "ctrl+alt+f13"
-        action: { type: run, cmd: "py C:/scripts/deploy.py" }
-      - combo: "ctrl+alt+f14"
-        action: { type: open, target: "https://github.com/Mun1to" }
-    knobs:
-      - ccw:   { combo: "ctrl+win+f13", action: { type: native, key: volume_down } }
-        press: { combo: "ctrl+win+f14", action: { type: native, key: mute } }
-        cw:    { combo: "ctrl+win+f15", action: { type: native, key: volume_up } }
+```bash
+.venv\Scripts\python scripts/screenshots.py
 ```
 
-## Layout (orientación normal)
+Profile example: [`config/profile.example.yaml`](config/profile.example.yaml). Protocol notes:
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
-```
- [ T1 ][ T2 ][ T3 ][ T4 ]      ( P1 )
- [ T5 ][ T6 ][ T7 ][ T8 ]      ( P2 )
- [ T9 ][T10 ][T11 ][T12 ]
-   12 teclas               2 perillas (giro + click)
-```
+---
 
-## Notas
+## 📄 License and credits
 
-- `F13`-`F24` no existen físicamente: por eso son ideales como combos "únicos".
-- Las perillas vienen por defecto a **volumen/multimedia nativo** (funcionan
-  aunque la app no esté corriendo). Las teclas vienen **sin asignar**, listas
-  para tus scripts.
-- El listener `keyboard` puede requerir ejecutar como administrador para
-  suprimir las pulsaciones en todas las apps.
-- El flasheo HID escribe en la interfaz de programación `MI_00` (usage page
-  `0xFF00`); no afecta a la interfaz de escritura, así que el teclado sigue
-  funcionando con normalidad.
+MIT, see [LICENSE](LICENSE).
 
-## Créditos
-
-Protocolo k884x portado desde [`ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
-(MIT, de `kriomant`), enviado por HID nativo en lugar de libusb. Listener con
-[`keyboard`](https://pypi.org/project/keyboard/). Licencia de este proyecto: [MIT](LICENSE).
+The k884x protocol is ported from [`ch57x-keyboard-tool`](https://github.com/kriomant/ch57x-keyboard-tool)
+(MIT, by `kriomant`), sent over native HID instead of libusb. Listener built on
+[`keyboard`](https://pypi.org/project/keyboard/).

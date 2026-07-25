@@ -1,4 +1,4 @@
-"""Interfaz de línea de comandos: detect | generate | flash | run."""
+"""Command line interface: detect | generate | flash | run | gui | autostart."""
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from .profile import Action, Binding, Device, Layer, Profile, load, save
 
 
 def _default_profile_path() -> Path:
-    """Dónde vive profile.yaml: junto al código en desarrollo, en los datos del
-    usuario cuando la app está empaquetada (la carpeta del programa es de solo lectura)."""
+    """Where profile.yaml lives: next to the code in development, in the user's data
+    when the app is packaged (the program folder is read only)."""
     if is_frozen():
         base = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "hotkeyconfig"
         return base / "profile.yaml"
@@ -24,7 +24,7 @@ def _default_profile_path() -> Path:
 
 DEFAULT_PROFILE = _default_profile_path()
 
-# Acciones por defecto de las perillas (multimedia nativo, válido en cualquier capa).
+# Default knob actions (native media, valid on any layer).
 _DEFAULT_KNOBS = {
     0: {"ccw": "volume_down", "press": "mute", "cw": "volume_up"},
     1: {"ccw": "previous", "press": "play_pause", "cw": "next"},
@@ -32,7 +32,7 @@ _DEFAULT_KNOBS = {
 
 
 def build_default_profile(device: Device | None = None) -> Profile:
-    """Perfil inicial para un layout: combos únicos, botones sin asignar, perillas a multimedia."""
+    """Starting profile for a layout: unique combos, unassigned buttons, knobs on media."""
     device = device or Device()
     per_layer = device.rows * device.columns
     layers: list[Layer] = []
@@ -50,73 +50,73 @@ def build_default_profile(device: Device | None = None) -> Profile:
                 action = Action("native", {"key": key}) if key else Action("unassigned")
                 kd[act] = Binding(combo, action)
             knobs.append(kd)
-        layers.append(Layer(name=f"Capa {li + 1}", buttons=buttons, knobs=knobs))
+        layers.append(Layer(name=f"Layer {li + 1}", buttons=buttons, knobs=knobs))
     profile = Profile(device=device, layers=layers)
     profile.validate()
     return profile
 
 
-# --- subcomandos ---------------------------------------------------------
+# --- subcommands ---------------------------------------------------------
 def cmd_detect(args: argparse.Namespace) -> int:
     from . import hid_flasher
 
     dev = Device()
     if hid_flasher.is_connected():
-        print(f"[ok] teclado {dev.vid}:{dev.pid} detectado (interfaz de programacion MI_00)")
+        print(f"[ok] keyboard {dev.vid}:{dev.pid} found (programming interface MI_00)")
         ok = True
     else:
-        print(f"[aviso] no veo el teclado {dev.vid}:{dev.pid} (¿enchufado?)")
+        print(f"[warn] cannot see keyboard {dev.vid}:{dev.pid} (is it plugged in?)")
         ok = False
-    # El binario de ch57x es OPCIONAL: el flasheo por HID no lo necesita.
+    # The ch57x binary is OPTIONAL: HID flashing does not need it.
     try:
-        print(f"[info] ch57x-keyboard-tool (opcional): {flasher.find_binary()}")
+        print(f"[info] ch57x-keyboard-tool (optional): {flasher.find_binary()}")
     except flasher.FlasherError:
-        print("[info] ch57x-keyboard-tool no instalado (no hace falta para el flasheo HID)")
+        print("[info] ch57x-keyboard-tool not installed (not needed for HID flashing)")
     return 0 if ok else 1
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
     out = Path(args.output)
     if out.exists() and not args.force:
-        print(f"[error] {out} ya existe. Usa --force para sobrescribir.")
+        print(f"[error] {out} already exists. Use --force to overwrite.")
         return 1
     out.parent.mkdir(parents=True, exist_ok=True)
     profile = build_default_profile()
     save(profile, out)
     n = sum(1 for _ in profile.iter_bindings())
-    print(f"[ok] perfil con {n} controles únicos escrito en {out}")
-    print("     Edita las acciones de los botones y luego: hotkeyconfig flash")
+    print(f"[ok] profile with {n} unique controls written to {out}")
+    print("     Edit the button actions and then run: hotkeyconfig flash")
     return 0
 
 
 def cmd_flash(args: argparse.Namespace) -> int:
     if not Path(args.profile).exists():
-        print(f"[error] no existe {args.profile}. Ejecuta primero: hotkeyconfig generate")
+        print(f"[error] {args.profile} not found. Run this first: hotkeyconfig generate")
         return 1
     profile = load(args.profile)
     profile.validate()
-    print(f"[..] mapeo de {args.profile} validado ({sum(1 for _ in profile.iter_bindings())} controles)")
+    print(f"[..] mapping from {args.profile} validated ({sum(1 for _ in profile.iter_bindings())} controls)")
 
     if not args.yes:
-        resp = input("Esto ESCRIBIRÁ la configuración en la memoria del teclado. ¿Continuar? [s/N] ")
-        if resp.strip().lower() not in ("s", "si", "sí", "y", "yes"):
-            print("cancelado")
+        resp = input("This WRITES the configuration into the keyboard's memory. Continue? [y/N] ")
+        if resp.strip().lower() not in ("y", "yes", "s", "si", "sí"):
+            print("cancelled")
             return 1
 
     if args.backend == "ch57x":
         flasher.validate(profile)
-        print("[..] grabando por ch57x-keyboard-tool…")
+        print("[..] writing through ch57x-keyboard-tool…")
         print(f"[ok] {flasher.flash(profile)}")
         return 0
 
-    # Backend por defecto: HID nativo (sin Zadig ni drivers).
+    # Default backend: native HID (no Zadig, no drivers).
     from . import hid_flasher
     if not hid_flasher.is_connected():
-        print("[error] no veo el teclado. Conéctalo y reintenta (o usa --backend ch57x).")
+        print("[error] cannot see the keyboard. Plug it in and retry (or use --backend ch57x).")
         return 1
-    print("[..] grabando por HID nativo…")
+    print("[..] writing over native HID…")
     n = hid_flasher.flash(profile)
-    print(f"[ok] {n} mensajes grabados en la memoria del teclado (persisten sin software)")
+    print(f"[ok] {n} messages written into the keyboard's memory (they persist without software)")
     return 0
 
 
@@ -125,7 +125,7 @@ def cmd_gui(args: argparse.Namespace) -> int:
         from . import gui_web
         return gui_web.run(args.profile)
     except ImportError:
-        print("[aviso] pywebview no disponible; abriendo la GUI básica (tkinter).")
+        print("[warn] pywebview not available; opening the basic GUI (tkinter).")
         from . import gui
         return gui.run(args.profile)
 
@@ -135,30 +135,30 @@ def cmd_autostart(args: argparse.Namespace) -> int:
 
     if args.action == "status":
         if autostart.is_installed():
-            print(f"[ok] arranque automático activo: {autostart.shortcut_path()}")
+            print(f"[ok] autostart enabled: {autostart.shortcut_path()}")
         else:
-            print("[info] arranque automático NO instalado")
+            print("[info] autostart NOT installed")
         return 0
     if args.action == "install":
         profile = None if args.profile == str(DEFAULT_PROFILE) else args.profile
         path = autostart.install(profile)
-        print(f"[ok] arranque automático instalado: {path}")
-        print("     La app de bandeja se iniciará sola al entrar en Windows.")
+        print(f"[ok] autostart installed: {path}")
+        print("     The tray app will start on its own when you log into Windows.")
         return 0
     if args.action == "uninstall":
         removed = autostart.uninstall()
-        print("[ok] arranque automático eliminado" if removed else "[info] no estaba instalado")
+        print("[ok] autostart removed" if removed else "[info] it was not installed")
         return 0
     return 1
 
 
 def _ensure_profile(path: str) -> None:
-    """Crea un profile.yaml por defecto si no existe (p. ej. primer arranque tras instalar)."""
+    """Create a default profile.yaml if missing (for example the first run after installing)."""
     p = Path(path)
     if not p.exists():
         p.parent.mkdir(parents=True, exist_ok=True)
         save(build_default_profile(), p)
-        logging.getLogger("hotkeyconfig").info("perfil por defecto creado en %s", p)
+        logging.getLogger("hotkeyconfig").info("default profile created at %s", p)
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -181,31 +181,31 @@ def cmd_run(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="hotkeyconfig",
-        description="Programa macropads ch57x y asígnales scripts/atajos.",
+        description="Program ch57x macropads and bind scripts and shortcuts to every key.",
     )
-    p.add_argument("-v", "--verbose", action="store_true", help="logs detallados")
+    p.add_argument("-v", "--verbose", action="store_true", help="verbose logs")
     sub = p.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("detect", help="comprueba la herramienta y el dispositivo")
+    sub.add_parser("detect", help="check the tool and the device")
 
-    g = sub.add_parser("generate", help="crea un profile.yaml con combos únicos")
+    g = sub.add_parser("generate", help="create a profile.yaml with unique combos")
     g.add_argument("-o", "--output", default=str(DEFAULT_PROFILE))
     g.add_argument("--force", action="store_true")
 
-    f = sub.add_parser("flash", help="graba el perfil en la memoria del teclado")
+    f = sub.add_parser("flash", help="write the profile into the keyboard's memory")
     f.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
-    f.add_argument("--yes", action="store_true", help="no preguntar confirmación")
+    f.add_argument("--yes", action="store_true", help="do not ask for confirmation")
     f.add_argument("--backend", choices=["hid", "ch57x"], default="hid",
-                   help="hid (por defecto, sin drivers) o ch57x (binario externo)")
+                   help="hid (default, no drivers) or ch57x (external binary)")
 
-    r = sub.add_parser("run", help="escucha los combos y ejecuta las acciones")
+    r = sub.add_parser("run", help="listen for the combos and run the actions")
     r.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
-    r.add_argument("--no-tray", action="store_true", help="sin icono de bandeja")
+    r.add_argument("--no-tray", action="store_true", help="no tray icon")
 
-    gp = sub.add_parser("gui", help="configurador gráfico (clic para asignar acciones)")
+    gp = sub.add_parser("gui", help="visual configurator (click to bind actions)")
     gp.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
 
-    a = sub.add_parser("autostart", help="arranque automático con Windows")
+    a = sub.add_parser("autostart", help="start automatically with Windows")
     a.add_argument("action", choices=["install", "uninstall", "status"])
     a.add_argument("-p", "--profile", default=str(DEFAULT_PROFILE))
     return p

@@ -7,7 +7,7 @@ device:
   knobs: 2
   orientation: normal
 layers:
-- name: Capa 1
+- name: Layer 1
   buttons:
   - combo: ctrl+alt+f13
     action:
@@ -76,7 +76,7 @@ layers:
       action:
         type: native
         key: next
-- name: Capa 2
+- name: Layer 2
   buttons:
   - combo: ctrl+shift+f13
     action:
@@ -145,7 +145,7 @@ layers:
       action:
         type: native
         key: next
-- name: Capa 3
+- name: Layer 3
   buttons:
   - combo: alt+shift+f13
     action:

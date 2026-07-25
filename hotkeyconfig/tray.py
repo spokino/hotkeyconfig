@@ -1,4 +1,4 @@
-"""Icono en la bandeja del sistema para controlar el runtime sin terminal."""
+"""System tray icon, to drive the runtime without a terminal."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def _make_icon_image():
 
     img = Image.new("RGB", (64, 64), (24, 24, 28))
     draw = ImageDraw.Draw(img)
-    # Una rejilla 3x4 minimalista que evoca el macropad.
+    # A minimal 3x4 grid that evokes the macropad.
     for r in range(3):
         for c in range(4):
             x, y = 8 + c * 13, 10 + r * 15
@@ -23,7 +23,7 @@ def _make_icon_image():
 
 
 def run_tray(runtime) -> None:
-    """Arranca el listener en un hilo y muestra el icono de bandeja (bloquea)."""
+    """Start the listener on a thread and show the tray icon (blocks)."""
     import pystray
     from pystray import MenuItem as Item
 
@@ -37,9 +37,9 @@ def run_tray(runtime) -> None:
     def on_reload(icon, item):
         try:
             n = runtime.reload()
-            icon.notify(f"Recargado: {n} atajos activos", "hotkeyconfig")
+            icon.notify(f"Reloaded: {n} shortcuts active", "hotkeyconfig")
         except Exception as exc:  # noqa: BLE001
-            icon.notify(f"Error al recargar: {exc}", "hotkeyconfig")
+            icon.notify(f"Reload failed: {exc}", "hotkeyconfig")
 
     def on_gui(icon, item):
         import subprocess
@@ -55,15 +55,15 @@ def run_tray(runtime) -> None:
         icon.stop()
 
     menu = pystray.Menu(
-        Item("Abrir configurador", on_gui, default=True),
+        Item("Open configurator", on_gui, default=True),
         Item(
-            lambda item: "Reanudar" if runtime.paused else "Pausar",
+            lambda item: "Resume" if runtime.paused else "Pause",
             on_toggle,
         ),
-        Item("Recargar configuracion", on_reload),
-        Item("Editar profile.yaml", on_edit),
+        Item("Reload configuration", on_reload),
+        Item("Edit profile.yaml", on_edit),
         pystray.Menu.SEPARATOR,
-        Item("Salir", on_quit),
+        Item("Quit", on_quit),
     )
     icon = pystray.Icon("hotkeyconfig", _make_icon_image(), "hotkeyconfig", menu)
     icon.run()

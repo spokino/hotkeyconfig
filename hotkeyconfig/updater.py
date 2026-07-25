@@ -1,9 +1,9 @@
-"""Auto-actualización desde GitHub Releases (Windows).
+"""Automatic updates from GitHub Releases (Windows).
 
-Seguridad: solo se consulta y descarga del repositorio oficial por HTTPS, y solo
-de hosts de GitHub. Si el release publica ``SHA256SUMS.txt``, se verifica el hash
-del instalador ANTES de ejecutarlo. La app nunca descarga ni ejecuta nada de
-fuentes externas.
+Security: it only queries and downloads from the official repository over HTTPS,
+and only from GitHub hosts. If the release publishes ``SHA256SUMS.txt``, the
+installer's hash is verified BEFORE running it. The app never downloads or runs
+anything from external sources.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def _host_allowed(url: str) -> bool:
 
 
 def check_for_update(force: bool = False) -> dict:
-    """Consulta el último release y compara con la versión actual (cacheado)."""
+    """Query the latest release and compare it with the running version (cached)."""
     global _cache
     with _lock:
         if _cache is not None and not force:
@@ -66,8 +66,8 @@ def check_for_update(force: bool = False) -> dict:
         req = _request(API_LATEST, accept="application/vnd.github+json")
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode("utf-8"))
-    except Exception:  # noqa: BLE001 - sin conexión no es un error visible
-        result["error"] = "no se pudo comprobar"
+    except Exception:  # noqa: BLE001 - being offline is not a visible error
+        result["error"] = "could not check"
         with _lock:
             _cache = result
         return result
@@ -79,8 +79,8 @@ def check_for_update(force: bool = False) -> dict:
     for asset in data.get("assets", []):
         name = asset.get("name", "")
         url = asset.get("browser_download_url")
-        # El release publica el instalador con la versión Y con un alias fijo;
-        # nos quedamos con el versionado (canónico).
+        # The release publishes the installer both with the version and under a
+        # fixed alias; keep the versioned one (the canonical asset).
         if name.endswith(INSTALLER_SUFFIX):
             if installer_url is None or version in name:
                 installer_url = url
@@ -103,7 +103,7 @@ def check_for_update(force: bool = False) -> dict:
 
 def _download(url: str, dst: Path) -> None:
     if not _host_allowed(url):
-        raise ValueError(f"origen de descarga no permitido: {url}")
+        raise ValueError(f"download source not allowed: {url}")
     with urllib.request.urlopen(_request(url), timeout=60) as resp, open(dst, "wb") as fh:
         while chunk := resp.read(65536):
             fh.write(chunk)
@@ -130,7 +130,7 @@ def _sha256(path: Path) -> str:
 
 
 def _quit_soon(delay: float = 1.2) -> None:
-    """Cierra la app en segundo plano para que el instalador pueda reemplazarla."""
+    """Close the app in the background so the installer can replace it."""
     def _quit() -> None:
         import time
         time.sleep(delay)
@@ -139,30 +139,30 @@ def _quit_soon(delay: float = 1.2) -> None:
 
 
 def apply_update() -> dict:
-    """Descarga el instalador, verifica el hash y lo lanza en silencioso."""
+    """Download the installer, verify its hash and launch it silently."""
     info = check_for_update()
     url = info.get("installer_url")
     if not url or not info.get("can_auto_install"):
-        return {"ok": False, "error": "actualización automática no disponible"}
+        return {"ok": False, "error": "automatic update not available"}
     if not _host_allowed(url):
-        return {"ok": False, "error": "origen de descarga no confiable"}
+        return {"ok": False, "error": "untrusted download source"}
 
     asset_name = url.rsplit("/", 1)[-1]
     dst = Path(tempfile.gettempdir()) / asset_name
     try:
         _download(url, dst)
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "error": f"fallo al descargar: {exc}"}
+        return {"ok": False, "error": f"download failed: {exc}"}
 
     if info.get("checksums_url"):
         expected = _expected_sha256(info["checksums_url"], asset_name)
         if expected and _sha256(dst) != expected:
             dst.unlink(missing_ok=True)
-            return {"ok": False, "error": "el checksum no coincide; descarga abortada"}
+            return {"ok": False, "error": "checksum mismatch; download discarded"}
 
     try:
         subprocess.Popen([str(dst), "/SILENT", "/NORESTART", "/SUPPRESSMSGBOXES"], close_fds=True)
     except OSError as exc:
-        return {"ok": False, "error": f"no se pudo iniciar el instalador: {exc}"}
+        return {"ok": False, "error": f"could not start the installer: {exc}"}
     _quit_soon()
     return {"ok": True}

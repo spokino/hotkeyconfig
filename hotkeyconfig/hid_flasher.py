@@ -1,13 +1,17 @@
-"""Flasher nativo por HID (Windows) — sin Zadig ni drivers externos.
+"""Native HID flasher (Windows), with no Zadig and no external drivers.
 
-Abre la interfaz de programación del teclado (MI_00, usage page 0xFF00) con la
-API HID nativa de Windows (vía hidapi) y le escribe la misma secuencia de
-mensajes que generaría ch57x-keyboard-tool, pero como reportes HID.
+Opens the keyboard's programming interface (MI_00, usage page 0xFF00) through the
+native Windows HID API (via hidapi) and writes the same message sequence that
+ch57x-keyboard-tool would produce, but as HID reports.
 
-Framing (confirmado leyendo las HID caps del dispositivo):
-- OutputReportByteLength = 65 y no hay feature reports.
-- El 0x03 inicial de ch57x es el primer byte de DATOS, no un Report ID HID.
-- Por tanto cada escritura son 65 bytes: [0x00 (report id)] + mensaje de 64.
+Framing (confirmed by reading the device's HID caps):
+- OutputReportByteLength = 65 and there are no feature reports.
+- The leading 0x03 of every ch57x message IS the HID Report ID, not payload.
+- So each write is 65 bytes: the 64 byte message plus one padding byte. Do NOT
+  prepend a 0x00 report id (that shifts everything and Windows rejects it).
+- The all zeros init message is skipped: report id 0x00 is not valid here.
+
+See docs/PROTOCOL.md for the full description.
 """
 
 from __future__ import annotations
@@ -30,7 +34,7 @@ class HidFlasherError(RuntimeError):
 
 
 def find_programming_path(vid: int = VID, pid: int = PID) -> bytes | None:
-    """Ruta HID de la interfaz de programación (MI_00) o None si no aparece."""
+    """HID path of the programming interface (MI_00), or None if it is not there."""
     import hid
 
     for d in hid.enumerate(vid, pid):
@@ -44,14 +48,14 @@ def is_connected(vid: int = VID, pid: int = PID) -> bool:
 
 
 def flash(profile: Profile, vid: int = VID, pid: int = PID, inter_delay: float = 0.002) -> int:
-    """Graba el perfil en el teclado por HID. Devuelve el nº de mensajes escritos."""
+    """Write the profile into the keyboard over HID. Returns how many messages were sent."""
     import hid
 
     path = find_programming_path(vid, pid)
     if path is None:
         raise HidFlasherError(
-            f"No encuentro la interfaz de programación de {vid:04x}:{pid:04x} "
-            "(usage page 0xFF00). ¿Está el teclado enchufado?"
+            f"Cannot find the programming interface of {vid:04x}:{pid:04x} "
+            "(usage page 0xFF00). Is the keyboard plugged in?"
         )
 
     messages = protocol.build_messages(profile) + protocol.build_led_messages(profile)
@@ -59,27 +63,27 @@ def flash(profile: Profile, vid: int = VID, pid: int = PID, inter_delay: float =
     try:
         dev.open_path(path)
     except OSError as exc:
-        raise HidFlasherError(f"No pude abrir la interfaz de programación: {exc}") from exc
+        raise HidFlasherError(f"Could not open the programming interface: {exc}") from exc
 
     try:
         written = 0
         for msg in messages:
-            # El primer byte del mensaje ch57x (0x03) es el Report ID HID; el
-            # resto son datos. Windows espera OutputReportByteLength (65) bytes,
-            # así que añadimos 1 byte de relleno. El mensaje 'init' empieza por
-            # 0x00 (report id inválido en HID) y se omite: no aplica a esta vía.
+            # The first byte of a ch57x message (0x03) is the HID Report ID and the
+            # rest is payload. Windows expects OutputReportByteLength (65) bytes, so
+            # one padding byte is appended. The 'init' message starts with 0x00 (not
+            # a valid HID report id) and is skipped: it does not apply to this path.
             if msg[0] == 0x00:
                 continue
-            report = msg + b"\x00"  # [0x03 (report id)] + datos + pad = 65 bytes
+            report = msg + b"\x00"  # [0x03 report id] + payload + pad = 65 bytes
             n = dev.write(report)
             if n != len(report):
                 raise HidFlasherError(
-                    f"escritura incompleta: {n} de {len(report)} bytes (mensaje {written})"
+                    f"incomplete write: {n} of {len(report)} bytes (message {written})"
                 )
             written += 1
             if inter_delay:
                 time.sleep(inter_delay)
-        log.info("flasheados %d mensajes por HID", written)
+        log.info("flashed %d messages over HID", written)
         return written
     finally:
         dev.close()

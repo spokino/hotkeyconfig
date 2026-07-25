@@ -1,7 +1,8 @@
-"""Modelo y (de)serialización del perfil de usuario (``profile.yaml``).
+"""Model and (de)serialization of the user profile (``profile.yaml``).
 
-El perfil es la **única fuente de verdad**: por cada capa describe, para cada
-botón y cada acción de perilla, el combo único asignado y la acción a ejecutar.
+The profile is the **single source of truth**: for every layer it describes, for
+every button and every knob action, the unique combo assigned to it and the
+action to run.
 """
 
 from __future__ import annotations
@@ -14,18 +15,18 @@ import yaml
 
 from . import combos
 
-# Tipos de acción reconocidos. "native" se graba directamente en el teclado
-# (no pasa por el runtime); el resto se disparan al detectar el combo único.
+# Recognised action types. "native" is written straight into the keyboard (it does
+# not go through the runtime); the rest fire when the unique combo is detected.
 ACTION_TYPES = {
-    "unassigned",  # sin asignar (no hace nada)
-    "run",         # ejecutar script/comando
-    "open",        # abrir app, carpeta o URL
-    "text",        # escribir/pegar texto
-    "media",       # tecla multimedia (vía runtime)
-    "native",      # tecla nativa grabada en el HW (volumen, etc.)
-    "hotkey",      # enviar un atajo a la app activa
-    "window",      # operación de ventana (minimizar, etc.)
-    "sequence",    # varias acciones en orden
+    "unassigned",  # nothing bound (does nothing)
+    "run",         # run a script or command
+    "open",        # open an app, folder or URL
+    "text",        # type or paste text
+    "media",       # media key (through the runtime)
+    "native",      # native key stored in the hardware (volume and so on)
+    "hotkey",      # send a shortcut to the active app
+    "window",      # window operation (minimize and so on)
+    "sequence",    # several actions in order
 }
 
 
@@ -37,8 +38,8 @@ class Action:
     def __post_init__(self) -> None:
         if self.type not in ACTION_TYPES:
             raise ValueError(
-                f"tipo de accion desconocido: {self.type!r} "
-                f"(validos: {sorted(ACTION_TYPES)})"
+                f"unknown action type: {self.type!r} "
+                f"(valid ones: {sorted(ACTION_TYPES)})"
             )
 
     @classmethod
@@ -70,8 +71,8 @@ class Binding:
 class Layer:
     name: str
     buttons: list[Binding]
-    knobs: list[dict[str, Binding]]  # por perilla: {ccw, press, cw} -> Binding
-    led: dict[str, Any] | None = None  # {mode, color} de la iluminación (None = no tocar)
+    knobs: list[dict[str, Binding]]  # per knob: {ccw, press, cw} -> Binding
+    led: dict[str, Any] | None = None  # {mode, color} of the lighting (None = leave as is)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Layer":
@@ -105,7 +106,7 @@ class Device:
     rows: int = combos.ROWS
     columns: int = combos.COLUMNS
     knobs: int = combos.KNOBS
-    orientation: str = "normal"  # normal | upsidedown | clockwise | counterclockwise
+    orientation: str = "normal"  # normal | upsidedown | clockwise | counterclockwise (as mounted)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Device":
@@ -123,8 +124,8 @@ class Device:
 class Profile:
     device: Device
     layers: list[Layer]
-    hotkeys: list[Binding] = field(default_factory=list)  # atajos del teclado normal
-    remaps: list[dict[str, str]] = field(default_factory=list)  # [{from, to}] remapeos
+    hotkeys: list[Binding] = field(default_factory=list)  # normal keyboard shortcuts
+    remaps: list[dict[str, str]] = field(default_factory=list)  # [{from, to}] key remaps
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Profile":
@@ -147,21 +148,21 @@ class Profile:
         return out
 
     def iter_bindings(self):
-        """Recorre (label, Binding) de los controles del macropad, todas las capas."""
+        """Walk (label, Binding) over the macropad controls, across every layer."""
         for li, layer in enumerate(self.layers, start=1):
             for bi, binding in enumerate(layer.buttons, start=1):
-                yield (f"C{li}/tecla{bi}", binding)
+                yield (f"L{li}/key{bi}", binding)
             for ki, knob in enumerate(layer.knobs, start=1):
                 for act in combos.KNOB_ACTIONS:
-                    yield (f"C{li}/perilla{ki}/{act}", knob[act])
+                    yield (f"L{li}/knob{ki}/{act}", knob[act])
 
     def validate(self) -> None:
-        """Comprueba unicidad de combos del macropad y consistencia del layout."""
+        """Check that the macropad combos are unique and the layout is consistent."""
         seen: dict[str, str] = {}
         for label, binding in self.iter_bindings():
             if binding.combo in seen:
                 raise ValueError(
-                    f"combo duplicado {binding.combo!r}: {label} y {seen[binding.combo]}"
+                    f"duplicated combo {binding.combo!r}: {label} and {seen[binding.combo]}"
                 )
             seen[binding.combo] = label
 

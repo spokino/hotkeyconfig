@@ -1,68 +1,69 @@
-"""Generador de combinaciones únicas para macropads ch57x (layout configurable).
+"""Unique combo generator for ch57x macropads (configurable layout).
 
-Concepto: estos macropads emiten pulsaciones HID estándar, no un ID por tecla.
-Para hacer cada control "único" le asignamos una combinación que ningún teclado
-físico produce: las teclas fantasma ``F13``..``F24`` (existen en HID pero no en
-hardware real) con familias de modificadores.
+The idea: these macropads send standard HID keystrokes, not a per key id. To make
+every control "unique" we assign it a combo no physical keyboard can produce: the
+phantom keys ``F13``..``F24`` (they exist in HID but not on real hardware) paired
+with modifier families.
 
-- Botones: familias de modificadores SIN la tecla Win.
-- Perillas: familias de modificadores CON la tecla Win.
+- Buttons: modifier families WITHOUT the Win key.
+- Knobs: modifier families WITH the Win key.
 
-Como las dos familias nunca se solapan y a cada control se le asigna un
-``(familia, tecla-F)`` distinto por su índice global, todos los combos son únicos
-por construcción, para cualquier layout dentro de los límites de ch57x
-(hasta 15 botones y 3 perillas, o 12 botones y 4 perillas). El esquema es
-retrocompatible: un layout 3x4 + 2 perillas produce los mismos combos de siempre.
+Since the two families never overlap and each control gets a distinct
+``(family, F key)`` from its global index, every combo is unique by construction,
+for any layout within the ch57x limits (up to 15 buttons and 3 knobs, or 12
+buttons and 4 knobs). The scheme is backwards compatible: a 3x4 layout with 2
+knobs produces exactly the same combos as before.
 """
 
 from __future__ import annotations
 
-# --- Layout por defecto (familia ch57x 3x4 + 2 perillas) ---
+# --- Default layout (the common ch57x board: 3x4 plus 2 knobs) ---
 ROWS = 3
 COLUMNS = 4
 KNOBS = 2
 LAYERS = 3
-KNOB_ACTIONS = ("ccw", "press", "cw")  # giro antihorario, click, giro horario
+KNOB_ACTIONS = ("ccw", "press", "cw")  # turn counter clockwise, click, turn clockwise
 ORIENTATIONS = ("normal", "upsidedown", "clockwise", "counterclockwise")
 
-# F13..F24: válidas en HID, ausentes en teclados reales -> "huecos" libres.
-_FKEYS = [f"f{n}" for n in range(13, 25)]  # 12 teclas
+# F13..F24: valid in HID, absent from real keyboards, so they are free slots.
+_FKEYS = [f"f{n}" for n in range(13, 25)]  # 12 keys
 
-# Familias de modificadores. Botones sin Win; perillas con Win -> nunca chocan.
-# El orden fija la asignación determinista (retrocompatible con el esquema previo).
+# Modifier families. Buttons without Win, knobs with Win, so they never collide.
+# The order fixes the deterministic assignment (backwards compatible with the
+# original scheme).
 _BUTTON_FAMILIES = [("ctrl", "alt"), ("ctrl", "shift"), ("alt", "shift"), ("ctrl", "alt", "shift")]
 _KNOB_FAMILIES = [("ctrl", "win"), ("alt", "win"), ("shift", "win"), ("ctrl", "alt", "win")]
 
 _KEYBOARD_MOD_ALIASES = {"win": "windows"}
 
-# Capacidad: cada familia cubre 12 teclas-F.
+# Capacity: every family covers 12 F keys.
 _CAPACITY = len(_FKEYS)
 
 
 def _alloc(families: list[tuple], slot: int) -> str:
-    """Asigna determinísticamente un combo (familia, tecla-F) al índice global ``slot``."""
+    """Deterministically assign a (family, F key) combo to the global index ``slot``."""
     fam_idx, fk_idx = divmod(slot, _CAPACITY)
     if fam_idx >= len(families):
-        raise ValueError("layout demasiado grande para el esquema de combos únicos")
+        raise ValueError("layout too large for the unique combo scheme")
     return "+".join([*families[fam_idx], _FKEYS[fk_idx]])
 
 
 def button_combo(layer: int, index: int, buttons_per_layer: int = ROWS * COLUMNS) -> str:
-    """Combo único para el botón ``index`` de la ``layer`` (0-based)."""
+    """Unique combo for button ``index`` of ``layer`` (both zero based)."""
     return _alloc(_BUTTON_FAMILIES, layer * buttons_per_layer + index)
 
 
 def knob_combo(layer: int, knob: int, action: str, knobs: int = KNOBS) -> str:
-    """Combo único para una acción de perilla (``ccw``/``press``/``cw``)."""
+    """Unique combo for one knob action (``ccw`` / ``press`` / ``cw``)."""
     if action not in KNOB_ACTIONS:
-        raise ValueError(f"accion de perilla invalida: {action}")
+        raise ValueError(f"invalid knob action: {action}")
     slot = layer * knobs * len(KNOB_ACTIONS) + knob * len(KNOB_ACTIONS) + KNOB_ACTIONS.index(action)
     return _alloc(_KNOB_FAMILIES, slot)
 
 
 def all_combos(rows: int = ROWS, columns: int = COLUMNS, knobs: int = KNOBS,
                layers: int = LAYERS) -> list[str]:
-    """Todos los combos del layout, en orden determinista (para validar unicidad)."""
+    """Every combo of the layout, in deterministic order (used to check uniqueness)."""
     per_layer = rows * columns
     combos: list[str] = []
     for layer in range(layers):
@@ -76,19 +77,19 @@ def all_combos(rows: int = ROWS, columns: int = COLUMNS, knobs: int = KNOBS,
 
 def assert_unique(rows: int = ROWS, columns: int = COLUMNS, knobs: int = KNOBS,
                   layers: int = LAYERS) -> None:
-    """Comprueba que el layout no produce colisiones de combos."""
+    """Check that the layout does not produce combo collisions."""
     combos = all_combos(rows, columns, knobs, layers)
     if len(combos) != len(set(combos)):
         dupes = sorted({c for c in combos if combos.count(c) > 1})
-        raise AssertionError(f"combos duplicados en el esquema: {dupes}")
+        raise AssertionError(f"duplicated combos in the scheme: {dupes}")
 
 
 def to_ch57x(combo: str) -> str:
-    """Forma canónica -> formato de ch57x-keyboard-tool (modificadores con '-')."""
+    """Canonical form to the ch57x-keyboard-tool format (modifiers joined with '-')."""
     return "-".join(combo.split("+"))
 
 
 def to_keyboard(combo: str) -> str:
-    """Forma canónica -> formato de la librería `keyboard` (alias de Win)."""
+    """Canonical form to the `keyboard` library format (Win alias)."""
     tokens = [_KEYBOARD_MOD_ALIASES.get(t, t) for t in combo.split("+")]
     return "+".join(tokens)

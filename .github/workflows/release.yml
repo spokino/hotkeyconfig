@@ -1,7 +1,7 @@
 name: Build and publish release
 
-# Al empujar un tag como v0.1.0, compila en Windows (.exe + instalador),
-# genera los checksums y publica el release con los assets.
+# Pushing a tag like v0.1.0 builds on Windows (.exe + installer), generates the
+# checksums and publishes the release with its assets.
 on:
   push:
     tags:
@@ -28,7 +28,7 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME#v}"
           if [ -n "$tag" ] && [ "$tag" != "${{ steps.ver.outputs.version }}" ]; then
-            echo "El tag ($tag) no coincide con __version__ (${{ steps.ver.outputs.version }})"
+            echo "Tag ($tag) does not match __version__ (${{ steps.ver.outputs.version }})"
             exit 1
           fi
 
@@ -70,7 +70,7 @@ jobs:
           mkdir -p dist
           find artifacts -type f -exec cp {} dist/ \;
           cd dist
-          # Copia con nombre fijo: da una URL de descarga permanente
+          # Fixed name copy: gives a permanent download URL
           # (releases/latest/download/hotkeyconfig-setup.exe).
           cp "hotkeyconfig-${VERSION}-setup.exe" "hotkeyconfig-setup.exe"
           sha256sum * > SHA256SUMS.txt
@@ -81,6 +81,17 @@ jobs:
           name: hotkeyconfig ${{ env.VERSION }}
           generate_release_notes: true
           body: |
+            ## Downloads (Windows 10/11)
+
+            - `hotkeyconfig-${{ env.VERSION }}-setup.exe` (installer, recommended): wizard with shortcuts and uninstaller. No administrator needed.
+            - `hotkeyconfig-windows.zip` (portable): unzip anywhere and run `hotkeyconfig.exe`.
+
+            For ch57x macropads (for example `1189:8842`): it programs every key with a unique combo and binds the script or action you want to it. All local, no drivers.
+
+            > **"Windows protected your PC"?** The app is not signed with a paid certificate, so SmartScreen may warn the first time. Click **More info** and then **Run anyway**.
+
+            ---
+
             ## Descargas (Windows 10/11)
 
             - `hotkeyconfig-${{ env.VERSION }}-setup.exe` (instalador, recomendado): asistente con accesos directos y desinstalador. No necesita administrador.
