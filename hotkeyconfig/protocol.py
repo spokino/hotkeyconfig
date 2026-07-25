@@ -61,8 +61,11 @@ def build_led_messages(profile) -> list[bytes]:
         if not led:
             continue
         code = led_code(led.get("mode", "off"), led.get("color", "blue"))
-        msgs.append(_pad([0x03, 0xFE, 0xB0, layer_idx + 1, 0x08, 0x00, 0x05, 0x01, 0x00, code, 0x00, 0x34]))
-        msgs.append(_pad([0x03, 0xFD, 0xFE, 0xFF, 0x00, 0x3D]))
+        # Layout exacto de k884x.rs set_led(): el byte de codigo va el ULTIMO.
+        msgs.append(_pad([0x03, 0xFE, 0xB0, layer_idx + 1,
+                          0x08, 0x00, 0x00, 0x00, 0x00,
+                          0x00, 0x01, 0x00, code]))
+        msgs.append(_pad([0x03, 0xFD, 0xFE, 0xFF]))  # fin de la secuencia
     return msgs
 
 
