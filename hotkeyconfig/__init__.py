@@ -5,4 +5,4 @@ grabar combos únicos en el teclado, y un listener propio que escucha esos
 combos y ejecuta acciones (scripts, apps, texto, multimedia, ventanas…).
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"

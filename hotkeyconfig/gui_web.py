@@ -123,6 +123,8 @@ class Api:
 
 
 def run(profile_path: str | Path) -> int:
+    import os
+
     import webview
 
     api = Api(profile_path)
@@ -131,5 +133,9 @@ def run(profile_path: str | Path) -> int:
         width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )
-    webview.start()
+    # private_mode=False para que el localStorage (idioma, etc.) persista entre sesiones;
+    # con el modo privado por defecto se borraba al cerrar. storage_path en una carpeta
+    # de usuario escribible (no en el directorio del programa, que puede ser de solo lectura).
+    storage = os.path.join(os.environ.get("LOCALAPPDATA") or str(Path.home()), "hotkeyconfig", "webview")
+    webview.start(private_mode=False, storage_path=storage)
     return 0

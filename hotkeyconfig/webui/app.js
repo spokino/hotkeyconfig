@@ -96,6 +96,88 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": 
 const svg = (t) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[t] || ICONS.unassigned}</svg>`;
 function markDirty() { state.dirty = true; }
 
+// --- desplegables propios (reemplazan al <select> nativo del SO) ----------
+// El combo nativo de Windows rompe el tema oscuro en WebView2. Envolvemos cada
+// <select> con un boton + menu propios, manteniendo el <select> real por debajo
+// para no tocar la logica (lee .value, reasigna opciones y engancha onchange).
+const CSELECTS = [];
+let cselGlobalWired = false;
+function closeAllMenus(except) { CSELECTS.forEach((e) => { if (e !== except && e.open) e.close(); }); }
+function enhanceSelect(sel) {
+  if (sel._enh) return sel._enh;
+  const inline = !!sel.closest("header, .subbar, .layoutbar");
+  const wrap = document.createElement("div");
+  wrap.className = "csel" + (inline ? " inline" : "");
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "csel-trigger";
+  trigger.innerHTML = '<span class="csel-dot" style="display:none"></span><span class="csel-label"></span><svg class="csel-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const menu = document.createElement("div");
+  menu.className = "csel-menu";
+  wrap.appendChild(trigger);
+  wrap.appendChild(menu);          // fixed: no lo recorta el overflow del modal
+  const dotEl = trigger.querySelector(".csel-dot");
+  const labelEl = trigger.querySelector(".csel-label");
+  const enh = { sel, wrap, trigger, menu, open: false, close, sync: syncLabel };
+  sel._enh = enh;
+
+  function syncLabel() {
+    const o = sel.options[sel.selectedIndex];
+    labelEl.textContent = o ? o.textContent : "";
+    const col = o && o.dataset.color;
+    if (col) { dotEl.style.display = ""; dotEl.style.background = col; } else dotEl.style.display = "none";
+  }
+  function buildMenu() {
+    menu.innerHTML = "";
+    Array.from(sel.options).forEach((o, i) => {
+      const it = document.createElement("div");
+      it.className = "csel-opt" + (i === sel.selectedIndex ? " sel" : "");
+      const col = o.dataset.color;
+      it.innerHTML = (col ? `<span class="csel-dot" style="background:${esc(col)}"></span>` : "") + '<span class="csel-optlbl"></span>';
+      it.querySelector(".csel-optlbl").textContent = o.textContent;
+      it.onclick = () => {
+        sel.selectedIndex = i; syncLabel(); close();
+        sel.dispatchEvent(new Event("input", { bubbles: true }));
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      };
+      menu.appendChild(it);
+    });
+  }
+  function place() {
+    const r = trigger.getBoundingClientRect();
+    menu.style.minWidth = r.width + "px";
+    // Centrado bajo el boton, sin salirse de la ventana.
+    const left = r.left + r.width / 2 - menu.offsetWidth / 2;
+    menu.style.left = Math.max(8, Math.min(left, window.innerWidth - menu.offsetWidth - 8)) + "px";
+    let top = r.bottom + 5;
+    if (top + menu.offsetHeight > window.innerHeight - 8) {
+      const above = r.top - 5 - menu.offsetHeight;
+      top = above > 8 ? above : Math.max(8, window.innerHeight - menu.offsetHeight - 8);
+    }
+    menu.style.top = top + "px";
+  }
+  function open() { closeAllMenus(enh); buildMenu(); menu.classList.add("show"); wrap.classList.add("open"); enh.open = true; place(); }
+  function close() { menu.classList.remove("show"); wrap.classList.remove("open"); enh.open = false; }
+  trigger.onclick = (e) => { e.preventDefault(); e.stopPropagation(); enh.open ? close() : open(); };
+
+  new MutationObserver(() => { syncLabel(); if (enh.open) { buildMenu(); place(); } }).observe(sel, { childList: true, subtree: true });
+  syncLabel();
+  CSELECTS.push(enh);
+  if (!cselGlobalWired) {
+    cselGlobalWired = true;
+    document.addEventListener("click", () => closeAllMenus());
+    window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllMenus(); });
+    window.addEventListener("scroll", () => closeAllMenus(), true);
+    window.addEventListener("resize", () => closeAllMenus());
+  }
+  return enh;
+}
+function enhanceIn(root) { root.querySelectorAll("select").forEach(enhanceSelect); }
+function syncSelects() { CSELECTS.forEach((e) => e.sync()); }
+function setSelVisible(sel, show) { const w = sel._enh ? sel._enh.wrap : sel; if (w) w.style.display = show ? "" : "none"; }
+
 function summary(a) {
   const p = a.params || a;
   switch (a.type) {
@@ -128,10 +210,11 @@ function applyLang(lang) {
     if (el.dataset.es === undefined) el.dataset.es = el.innerHTML;
     el.innerHTML = lang === "en" ? el.dataset.en : el.dataset.es;
   });
-  $("langSel").value = lang;
+  $("langBtnTxt").textContent = lang === "es" ? "English" : "Español";
   localStorage.setItem("hkc-lang", lang);
   if (state.profile) renderAll();
   refreshUpdateBar();
+  syncSelects();
 }
 
 // --- editor modal ---------------------------------------------------------
@@ -139,7 +222,7 @@ let edState = null;
 function openEditor(action, title, onSave) {
   edState = { work: { type: action.type, params: Object.assign({}, action.params) }, target: action, onSave };
   $("edTitle").textContent = title;
-  $("edType").innerHTML = ORDER.map((t) => `<option value="${t}" ${t === action.type ? "selected" : ""}>${tr("type_" + t)}</option>`).join("");
+  $("edType").innerHTML = ORDER.map((t) => `<option value="${t}" data-color="${TYPE_COLOR[t]}" ${t === action.type ? "selected" : ""}>${tr("type_" + t)}</option>`).join("");
   renderEdFields();
   $("edOverlay").classList.add("show");
 }
@@ -156,8 +239,9 @@ function renderEdFields() {
   $("edFields").querySelectorAll("[data-f]").forEach((el) => el.addEventListener("input", () => {
     if (el.value === "") delete edState.work.params[el.dataset.f]; else edState.work.params[el.dataset.f] = el.value;
   }));
+  enhanceIn($("edFields"));
 }
-function closeEditor() { $("edOverlay").classList.remove("show"); edState = null; }
+function closeEditor() { closeAllMenus(); $("edOverlay").classList.remove("show"); edState = null; }
 
 // --- confirmación propia (sustituye al confirm() nativo) ------------------
 let confirmResolve = null;
@@ -208,9 +292,9 @@ function renderLayers() { $("layers").innerHTML = state.profile.layers.map((l, i
 function renderLed() {
   const led = state.profile.layers[state.layer].led || { mode: "keep", color: "blue" };
   $("ledMode").innerHTML = LED_MODE_KEYS.map((k) => `<option value="${k}" ${k === led.mode ? "selected" : ""}>${tr("led_" + k)}</option>`).join("");
-  $("ledColor").innerHTML = LED_COLOR_KEYS.map((k) => `<option value="${k}" ${k === led.color ? "selected" : ""}>${tr(k)}</option>`).join("");
+  $("ledColor").innerHTML = LED_COLOR_KEYS.map((k) => `<option value="${k}" data-color="${LED_HEX[k]}" ${k === led.color ? "selected" : ""}>${tr(k)}</option>`).join("");
   const show = led.mode !== "keep" && led.mode !== "off";
-  $("ledColor").style.display = show ? "" : "none"; $("ledSwatch").style.display = show ? "" : "none";
+  setSelVisible($("ledColor"), show); $("ledSwatch").style.display = show ? "" : "none";
   $("ledSwatch").style.background = LED_HEX[led.color] || "#888";
 }
 function renderLayoutBar() {
@@ -340,7 +424,7 @@ function wire() {
   $("tourBack").onclick = () => { if (tourStep > 0) { tourStep--; showTourStep(); } };
   $("tourSkip").onclick = endTour;
   window.addEventListener("resize", () => { if (tourOn) showTourStep(); });
-  $("langSel").onchange = (e) => applyLang(e.target.value);
+  $("langBtn").onclick = () => applyLang(LANG === "es" ? "en" : "es");
   $("layers").addEventListener("click", (e) => { const t = e.target.closest(".lt"); if (t) { state.layer = +t.dataset.l; renderLayers(); renderLed(); renderPad(); } });
   $("grid").addEventListener("click", (e) => { const k = e.target.closest(".key"); if (!k) return; const b = state.profile.layers[state.layer].buttons[+k.dataset.key]; openEditor(b.action, `${tr("key_word")} ${+k.dataset.key + 1}`, () => { markDirty(); renderPad(); }); });
   $("knobs").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; const b = state.profile.layers[state.layer].knobs[+c.dataset.knob][c.dataset.sub]; openEditor(b.action, `${tr("knob_word")} ${+c.dataset.knob + 1}`, () => { markDirty(); renderPad(); }); });
@@ -373,9 +457,10 @@ function setLed() { const mode = $("ledMode").value, color = $("ledColor").value
 
 async function init() {
   state.profile = await api().get_profile();
-  wire(); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
+  wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
   checkUpdate();
-  if (!localStorage.getItem("hkc-seen")) startTour();
+  // El tour no se lanza solo al abrir (molestaba en cada arranque). Esta a un clic
+  // en la pestana "Guia" -> "Iniciar tour interactivo", o en el boton "Guia" de la cabecera.
 }
 if (window.pywebview && window.pywebview.api) init();
 else window.addEventListener("pywebviewready", init);
