@@ -117,7 +117,7 @@ Every knob has three actions: turn left, press, turn right.
 | `type` | What it does | Fields |
 |--------|--------------|--------|
 | `run` | Runs a script or command | `cmd` or `args`, `cwd`, `shell` |
-| `open` | Opens an app, folder or URL | `target` |
+| `open` | Opens an app, folder or URL | `target`, `browser` |
 | `text` | Types or pastes text | `text` |
 | `media` | Media key, handled by the app | `key` |
 | `hotkey` | Sends a shortcut to the active app | `send` |
@@ -125,6 +125,11 @@ Every knob has three actions: turn left, press, turn right.
 | `sequence` | Several actions in order | `steps` |
 | `native` | Written into the hardware (volume and so on) | `key` |
 | `unassigned` | Does nothing | (none) |
+
+> On `open`: leave `browser` empty and links follow your system default. Set it to the name of an
+> installed browser (the interface lists the ones it finds) and links always open there. Either way
+> the window is brought to the front, so a key press takes you to what you just opened instead of
+> leaving it behind whatever you were working on.
 
 ---
 

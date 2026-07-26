@@ -122,7 +122,7 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 | `type` | Qué hace | Campos |
 |--------|----------|--------|
 | `run` | Ejecuta un script o comando | `cmd` o `args`, `cwd`, `shell` |
-| `open` | Abre una app, carpeta o URL | `target` |
+| `open` | Abre una app, carpeta o URL | `target`, `browser` |
 | `text` | Escribe o pega texto | `text` |
 | `media` | Tecla multimedia, gestionada por la app | `key` |
 | `hotkey` | Manda un atajo a la app activa | `send` |
@@ -130,6 +130,11 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 | `sequence` | Varias acciones en orden | `steps` |
 | `native` | Se graba en el hardware (volumen, etc.) | `key` |
 | `unassigned` | No hace nada | (ninguno) |
+
+> Sobre `open`: si dejas `browser` vacío, los enlaces se abren en el navegador del sistema. Si pones
+> el nombre de uno instalado (la interfaz te lista los que encuentra), se abren siempre en ese. En
+> los dos casos la ventana pasa al primer plano, así que al pulsar la tecla vas a lo que acabas de
+> abrir en vez de quedarte en la aplicación donde estabas.
 
 ---
 

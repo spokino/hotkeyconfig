@@ -8,9 +8,11 @@ const LED_COLOR_KEYS = ["white", "red", "orange", "yellow", "green", "cyan", "bl
 const ORIENT_KEYS = ["normal", "upsidedown", "clockwise", "counterclockwise"];
 const LED_HEX = { white: "#eeeeee", red: "#e24b4a", orange: "#ef9f27", yellow: "#f2d024", green: "#63c132", cyan: "#22c1c1", blue: "#3b82f6", purple: "#8b5cf6" };
 const TYPE_COLOR = { unassigned: "var(--muted)", run: "var(--c-run)", open: "var(--c-open)", text: "var(--c-text)", media: "var(--c-media)", native: "var(--c-native)", hotkey: "var(--c-hotkey)", window: "var(--c-window)", sequence: "var(--c-sequence)" };
+let BROWSERS = [];   // los que hay instalados, los da el sistema al arrancar
 const TYPE_FIELDS = {
   run: [{ k: "cmd", ph: "py C:/scripts/deploy.py" }, { k: "cwd", ph: "" }],
-  open: [{ k: "target", ph: "https://github.com/Mun1to" }],
+  open: [{ k: "target", ph: "https://github.com/Mun1to" },
+         { k: "browser", list: () => [{ v: "", l: tr("browser_default") }].concat(BROWSERS.map((b) => ({ v: b.name, l: b.name }))) }],
   text: [{ k: "text", ph: "" }],
   media: [{ k: "key", opts: MEDIA_KEYS }], native: [{ k: "key", opts: MEDIA_KEYS }],
   hotkey: [{ k: "send", ph: "ctrl+shift+s" }],
@@ -37,6 +39,7 @@ const T = {
     hint_hotkey: "Manda un atajo a la app activa, p. ej. ctrl+c.", hint_window: "Minimiza / maximiza / restaura / cierra.",
     hint_sequence: "Varias acciones en orden (se edita en profile.yaml).",
     fld_cmd: "Comando", fld_cwd: "Carpeta (opcional)", fld_target: "Destino", fld_text: "Texto", fld_key: "Tecla", fld_send: "Atajo", fld_do: "Operación",
+    fld_browser: "Navegador (solo para enlaces)", browser_default: "El del sistema",
     led_keep: "No tocar", led_off: "Apagada", led_backlight: "Fija", led_press: "Al pulsar", led_shock: "Onda", led_shock2: "Onda 2",
     white: "Blanco", red: "Rojo", orange: "Naranja", yellow: "Amarillo", green: "Verde", cyan: "Cian", blue: "Azul", purple: "Morado",
     or_normal: "Normal", or_upsidedown: "Del revés", or_clockwise: "90° horario", or_counterclockwise: "90° antihorario",
@@ -67,6 +70,7 @@ const T = {
     hint_hotkey: "Sends a shortcut to the active app, e.g. ctrl+c.", hint_window: "Minimize / maximize / restore / close.",
     hint_sequence: "Several actions in order (edit in profile.yaml).",
     fld_cmd: "Command", fld_cwd: "Folder (optional)", fld_target: "Target", fld_text: "Text", fld_key: "Key", fld_send: "Shortcut", fld_do: "Operation",
+    fld_browser: "Browser (links only)", browser_default: "System default",
     led_keep: "Leave as is", led_off: "Off", led_backlight: "Solid", led_press: "On press", led_shock: "Wave", led_shock2: "Wave 2",
     white: "White", red: "Red", orange: "Orange", yellow: "Yellow", green: "Green", cyan: "Cyan", blue: "Blue", purple: "Purple",
     or_normal: "Normal", or_upsidedown: "Upside down", or_clockwise: "90° clockwise", or_counterclockwise: "90° counter-clockwise",
@@ -180,8 +184,16 @@ function enhanceIn(root) { root.querySelectorAll("select").forEach(enhanceSelect
 function syncSelects() { CSELECTS.forEach((e) => e.sync()); }
 function setSelVisible(sel, show) { const w = sel._enh ? sel._enh.wrap : sel; if (w) w.style.display = show ? "" : "none"; }
 
+// The profile stores the action fields next to the type ({type:"open", target:"..."}).
+// The nested "params" that versions up to 0.4.0 wrote is still accepted when reading.
+function actionParams(a) {
+  const out = {};
+  for (const k in a) if (k !== "type" && k !== "params") out[k] = a[k];
+  return Object.assign(out, a.params || {});
+}
+
 function summary(a) {
-  const p = a.params || a;
+  const p = actionParams(a);
   switch (a.type) {
     case "unassigned": return "\u2014";
     case "run": return p.cmd || (p.args || []).join(" ") || "script";
@@ -226,7 +238,7 @@ let edState = null;
 function openEditor(binding, title, onSave) {
   const action = binding.action || binding;
   const hasColor = !!binding.action;   // solo los controles del macropad tienen luz
-  edState = { work: { type: action.type, params: Object.assign({}, action.params) },
+  edState = { work: { type: action.type, params: actionParams(action) },
               target: action, binding: hasColor ? binding : null, onSave };
   $("edTitle").textContent = title;
   $("edColorRow").style.display = hasColor ? "" : "none";
@@ -248,6 +260,10 @@ function renderEdFields() {
   $("edFields").innerHTML = fields.map((f) => {
     const val = edState.work.params[f.k] != null ? edState.work.params[f.k] : "";
     const lbl = tr("fld_" + f.k);
+    if (f.list) {  // opciones que salen del sistema (navegadores instalados)
+      const items = f.list();
+      return `<label>${lbl}</label><select data-f="${f.k}">${items.map((o) => `<option value="${esc(o.v)}" ${o.v === val ? "selected" : ""}>${esc(o.l)}</option>`).join("")}</select>`;
+    }
     if (f.opts) return `<label>${lbl}</label><select data-f="${f.k}">${f.opts.map((o) => `<option value="${o}" ${o === val ? "selected" : ""}>${o}</option>`).join("")}</select>`;
     return `<label>${lbl}</label><input data-f="${f.k}" value="${esc(val)}" placeholder="${esc(f.ph || "")}">`;
   }).join("");
@@ -449,7 +465,7 @@ function wire() {
   document.querySelector(".layoutbar").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
   $("lbOrient").onchange = (e) => { state.profile.device.orientation = e.target.value; markDirty(); renderPad(); };
 
-  $("addHotkey").onclick = async () => { const combo = await captureKey("cap_shortcut"); if (!combo) return; const h = { combo, action: { type: "unassigned", params: {} } }; state.profile.hotkeys.push(h); markDirty(); renderHotkeys(); openEditor(h.action, combo, () => { markDirty(); renderHotkeys(); }); };
+  $("addHotkey").onclick = async () => { const combo = await captureKey("cap_shortcut"); if (!combo) return; const h = { combo, action: { type: "unassigned" } }; state.profile.hotkeys.push(h); markDirty(); renderHotkeys(); openEditor(h.action, combo, () => { markDirty(); renderHotkeys(); }); };
   $("hotkeys").addEventListener("click", (e) => { const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"); if (ed) { const h = state.profile.hotkeys[+ed.dataset.edit]; openEditor(h.action, h.combo, () => { markDirty(); renderHotkeys(); }); } if (del) { state.profile.hotkeys.splice(+del.dataset.del, 1); markDirty(); renderHotkeys(); } });
   $("addRemap").onclick = async () => { const from = await captureKey("cap_from"); if (!from) return; const to = await captureKey("cap_to"); if (!to) return; state.profile.remaps.push({ from, to }); markDirty(); renderRemaps(); };
   $("remaps").addEventListener("click", (e) => { const del = e.target.closest("[data-delr]"); if (del) { state.profile.remaps.splice(+del.dataset.delr, 1); markDirty(); renderRemaps(); } });
@@ -457,7 +473,8 @@ function wire() {
   $("edType").onchange = (e) => { edState.work.type = e.target.value; edState.work.params = {}; renderEdFields(); };
   $("edSave").onclick = () => {
     const a = edState.target, w = edState.work;
-    a.type = w.type; a.params = w.params;
+    for (const k in a) if (k !== "type") delete a[k];   // out with the previous fields
+    a.type = w.type; Object.assign(a, w.params);        // flat, the shape the listener reads
     if (edState.binding) {
       const c = $("edColor").value;
       if (c) edState.binding.color = c; else delete edState.binding.color;
@@ -481,6 +498,7 @@ function setLed() { const mode = $("ledMode").value, color = $("ledColor").value
 
 async function init() {
   state.profile = await api().get_profile();
+  try { BROWSERS = await api().browsers() || []; } catch (e) { BROWSERS = []; }
   wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
   checkUpdate();
   // El tour no se lanza solo al abrir (molestaba en cada arranque). Esta a un clic

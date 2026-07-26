@@ -54,6 +54,14 @@ class Api:
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 
+    def browsers(self) -> list[dict]:
+        """Installed browsers, to pick one in an 'open' action."""
+        from . import browsers as browsers_mod
+        try:
+            return browsers_mod.list_browsers()
+        except Exception:  # noqa: BLE001 - the list is optional, the default always works
+            return []
+
     def test_action(self, action_dict: dict) -> dict:
         """Run an action once, so it can be tested from the GUI."""
         try:
@@ -129,6 +137,12 @@ def run(profile_path: str | Path) -> int:
     import os
 
     import webview
+
+    # Turning off the HTTP cache: since the interface files sit next to the program,
+    # WebView2 was serving the previous version of the interface after an update
+    # while the Python side was already the new one. There is nothing to gain by
+    # caching a handful of local files.
+    os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-http-cache")
 
     api = Api(profile_path)
     webview.create_window(

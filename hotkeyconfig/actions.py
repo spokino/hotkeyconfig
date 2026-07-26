@@ -15,6 +15,8 @@ import time
 import webbrowser
 from typing import Any
 
+from . import browsers, winfocus
+
 log = logging.getLogger("hotkeyconfig.actions")
 
 # Friendly names -> names used by the `keyboard` library.
@@ -60,10 +62,25 @@ def _open(p: dict[str, Any]) -> None:
     if not target:
         log.warning("'open' action without 'target'")
         return
-    if target.startswith(("http://", "https://")):
+    is_url = target.startswith(("http://", "https://"))
+    # An empty "browser" means whichever one the system uses for links.
+    exe = browsers.resolve(p.get("browser")) if is_url else ""
+    # The listener works in the background, so Windows would deny the foreground
+    # to what we open. This hands over that permission before launching.
+    winfocus.allow_foreground()
+    if exe:
+        subprocess.Popen([exe, target])
+    elif is_url:
         webbrowser.open(target)
     else:
-        os.startfile(os.path.expandvars(target))  # type: ignore[attr-defined]
+        target = os.path.expandvars(target)
+        os.startfile(target)  # type: ignore[attr-defined]
+    if is_url:
+        # A running browser opens the tab in its existing window and exits, so
+        # nobody asks for the foreground: that window has to be raised by hand.
+        winfocus.raise_app(exe or browsers.default_browser())
+    elif target.lower().endswith(".exe"):
+        winfocus.raise_app(target)
 
 
 def _text(p: dict[str, Any]) -> None:

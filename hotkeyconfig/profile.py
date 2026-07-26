@@ -48,6 +48,12 @@ class Action:
             return cls()
         data = dict(data)
         type_ = data.pop("type", "unassigned")
+        # Up to 0.4.0 the web UI saved the fields inside a nested "params", while
+        # everything else reads them at the top level, so those actions silently did
+        # nothing. Both shapes are accepted here; to_dict always writes the flat one.
+        nested = data.pop("params", None)
+        if isinstance(nested, dict):
+            data = {**data, **nested}
         return cls(type=type_, params=data)
 
     def to_dict(self) -> dict[str, Any]:
