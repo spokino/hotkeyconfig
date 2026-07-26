@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="branding/logo-256.png" alt="hotkeyconfig" width="120" height="120" />
+<img src="branding/logo-256.png" alt="HotKeyConfig" width="120" height="120" />
 
-# hotkeyconfig
+# HotKeyConfig
 
 **Cada tecla, a tu manera.** Convierte un macropad barato de AliExpress en un panel donde **cada tecla ejecuta lo que tú quieras**.
 
@@ -46,8 +46,10 @@ acciones.
   pulsarlo, volviendo después al color de la capa. Ojo, es **solo al pulsar**: el ch57x no puede
   mantener un color distinto en cada tecla (ver [docs/PROTOCOL.md](docs/PROTOCOL.md)), y hace
   falta tener el listener en marcha.
-- 🧩 **Layout configurable**: filas, columnas, perillas y orientación, para encajar con otros
-  modelos ch57x.
+- 🧩 **Eliges tu teclado de una lista**: ocho formas distintas, de 3 teclas y una perilla hasta 16 y
+  tres, y colocas las perillas donde las tienes de verdad.
+- 🚪 **Teclas que funcionan con la app cerrada**: las de abrir un programa o una web se pueden
+  delegar en Windows y responden sin el listener (ver más abajo, tiene sus límites).
 - 🖥️ **App de escritorio de verdad**: editor visual, tema claro/oscuro que sigue al del sistema,
   español e inglés, arranque con Windows, instalador y **actualizaciones automáticas**.
 - 🔒 **Privada por diseño**: sin telemetría, sin llamadas de red en el listener y **no es un
@@ -58,14 +60,19 @@ acciones.
 ## 📸 Capturas
 
 <div align="center">
-  <img src="branding/screenshots/es/01-macropad.png" alt="Pantalla principal de hotkeyconfig" width="820" />
+  <img src="branding/screenshots/es/01-macropad.png" alt="Pantalla principal de HotKeyConfig" width="820" />
 </div>
 
-<p align="center"><em>Pantalla principal: capas, luz RGB por capa, ajuste de estructura al vuelo y cada tecla mostrando la acción que tiene asignada.</em></p>
+<p align="center"><em>Pantalla principal: capas, luz RGB por capa, tu teclado elegido de una lista y cada tecla mostrando la acción que tiene asignada.</em></p>
 
-| Editor de acciones | Atajos de teclado | Guía interactiva |
-| :--: | :--: | :--: |
-| <img src="branding/screenshots/es/02-editor.png" alt="Editor de acciones" /> | <img src="branding/screenshots/es/03-shortcuts.png" alt="Atajos globales y remapeos" /> | <img src="branding/screenshots/es/04-guide.png" alt="Guía interactiva" /> |
+| Elige tu teclado | Editor de acciones |
+| :--: | :--: |
+| <img src="branding/screenshots/es/05-models.png" alt="Selector de modelo de teclado" /> | <img src="branding/screenshots/es/02-editor.png" alt="Editor de acciones" /> |
+| Se elige por lo que se puede contar: teclas y perillas. | Cada acción, su color, y si debe funcionar con la app cerrada. |
+
+| Atajos de teclado | Guía interactiva |
+| :--: | :--: |
+| <img src="branding/screenshots/es/03-shortcuts.png" alt="Atajos globales y remapeos" /> | <img src="branding/screenshots/es/04-guide.png" alt="Guía interactiva" /> |
 
 ---
 

@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="branding/logo-256.png" alt="hotkeyconfig" width="120" height="120" />
+<img src="branding/logo-256.png" alt="HotKeyConfig" width="120" height="120" />
 
-# hotkeyconfig
+# HotKeyConfig
 
 **Every key, your way.** Turn a cheap AliExpress macropad into a control panel where **every key runs whatever you want**.
 
@@ -45,7 +45,10 @@ desktop app that programs the keyboard **over native Windows HID**, then runs yo
   press it, then goes back to the layer colour. Note this is **only while pressing**: the ch57x
   cannot hold a different colour on each key (see [docs/PROTOCOL.md](docs/PROTOCOL.md)), and it
   needs the listener running.
-- 🧩 **Configurable layout**: rows, columns, knobs and orientation, so it fits other ch57x models.
+- 🧩 **Pick your keyboard from a list**: eight shapes, from 3 keys and a knob up to 16 and three,
+  with the knobs where you actually have them.
+- 🚪 **Keys that work with the app closed**: opening a program or a link can be handed over to
+  Windows, and it responds without the listener (see below, it has its limits).
 - 🖥️ **Real desktop app**: visual editor, light/dark theme that follows your system, English and
   Spanish, start with Windows, installer and **automatic updates**.
 - 🔒 **Private by design**: no telemetry, no network calls in the listener, and it is **not a
@@ -56,14 +59,19 @@ desktop app that programs the keyboard **over native Windows HID**, then runs yo
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="branding/screenshots/en/01-macropad.png" alt="hotkeyconfig main screen" width="820" />
+  <img src="branding/screenshots/en/01-macropad.png" alt="HotKeyConfig main screen" width="820" />
 </div>
 
-<p align="center"><em>Main screen: layers, per layer RGB light, live layout steppers, and every key showing the action bound to it.</em></p>
+<p align="center"><em>Main screen: layers, per layer RGB light, your keyboard picked from a list, and every key showing the action bound to it.</em></p>
 
-| Action editor | Keyboard shortcuts | Interactive guide |
-| :--: | :--: | :--: |
-| <img src="branding/screenshots/en/02-editor.png" alt="Action editor" /> | <img src="branding/screenshots/en/03-shortcuts.png" alt="Global shortcuts and remaps" /> | <img src="branding/screenshots/en/04-guide.png" alt="Interactive guide" /> |
+| Pick your keyboard | Action editor |
+| :--: | :--: |
+| <img src="branding/screenshots/en/05-models.png" alt="Keyboard model picker" /> | <img src="branding/screenshots/en/02-editor.png" alt="Action editor" /> |
+| Choose it by what you can count, keys and knobs. | Every action, its colour, and whether it should work with the app closed. |
+
+| Keyboard shortcuts | Interactive guide |
+| :--: | :--: |
+| <img src="branding/screenshots/en/03-shortcuts.png" alt="Global shortcuts and remaps" /> | <img src="branding/screenshots/en/04-guide.png" alt="Interactive guide" /> |
 
 ---
 

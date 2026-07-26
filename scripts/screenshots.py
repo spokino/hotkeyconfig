@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT))
 import webview  # noqa: E402
 from PIL import ImageChops, ImageGrab  # noqa: E402
 
-from hotkeyconfig import gui_web  # noqa: E402
+from hotkeyconfig import gui_web, winfocus  # noqa: E402
 from hotkeyconfig.cli import build_default_profile  # noqa: E402
 from hotkeyconfig.profile import Action, Binding, save  # noqa: E402
 
@@ -106,7 +106,11 @@ def bring_to_front(hwnd: int, move_to=None) -> None:
                             0x0001 | 0x0040)  # SWP_NOSIZE | SWP_SHOWWINDOW
     else:
         user32.SetWindowPos(hwnd, wintypes.HWND(-1), 0, 0, 0, 0, 0x0001 | 0x0002)
-    user32.SetForegroundWindow(hwnd)
+    # SetForegroundWindow a secas no basta: Windows se lo deniega a un proceso que
+    # no tiene ya el primer plano, y entonces otra ventana puede quedar por delante
+    # y la calibracion no encuentra la app. winfocus sabe insistir de la unica forma
+    # que funciona (una entrada sintetica minima antes de pedirlo).
+    winfocus._raise(hwnd)
     time.sleep(0.25)
 
 
@@ -192,7 +196,11 @@ def calibrate(window, hwnd: int):
                             green.point(lambda v: 255 if abs(v - mark[1]) <= tol else 0)),
         blue.point(lambda v: 255 if abs(v - mark[2]) <= tol else 0))
     if not hot.getbbox():
-        raise RuntimeError("calibracion fallida: no localizo la ventana en la pantalla")
+        # Con el dato de donde deberia estar la ventana se ve enseguida si el
+        # problema es que quedo tapada, minimizada o fuera de la pantalla.
+        raise RuntimeError(
+            "calibracion fallida: no localizo la ventana en la pantalla. "
+            f"La app dice estar en {window_box(hwnd)} y la captura mide {full.size}")
     found = (*_dominant_run(hot, "x"), *_dominant_run(hot, "y"))
     found = (found[0], found[2], found[1], found[3])
 
@@ -231,6 +239,8 @@ SHOTS = [
     ("02-editor", "switchSection('pad'); document.querySelector('.grid .key').click(); ''"),
     ("03-shortcuts", "closeEditor(); switchSection('keys'); ''"),
     ("04-guide", "switchSection('guide'); ''"),
+    # El catalogo de teclados desplegado: es lo que responde a "¿vale para el mio?".
+    ("05-models", "switchSection('pad'); $('lbModel')._enh.trigger.click(); ''"),
 ]
 
 
@@ -273,7 +283,7 @@ def main() -> None:
 
     api = gui_web.Api(tmp)
     window = webview.create_window(
-        "hotkeyconfig", url=str(gui_web.INDEX), js_api=api,
+        "HotKeyConfig", url=str(gui_web.INDEX), js_api=api,   # el mismo titulo que la app
         width=WIDTH, height=HEIGHT, background_color="#16161a",
     )
 
@@ -292,7 +302,10 @@ def main() -> None:
 
     # Red de seguridad: nunca dejar el proceso colgado.
     threading.Thread(target=lambda: (time.sleep(120), os._exit(1)), daemon=True).start()
-    webview.start(worker)
+    # Puerto propio: pywebview sirve la interfaz por HTTP en uno fijo y, si esta
+    # ocupado, carga la de la otra instancia. Sin esto las capturas pueden salir
+    # de una version antigua del programa que estuviera abierta.
+    webview.start(worker, http_port=gui_web._free_port())
 
 
 if __name__ == "__main__":
