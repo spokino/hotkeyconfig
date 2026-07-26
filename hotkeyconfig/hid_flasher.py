@@ -47,6 +47,40 @@ def is_connected(vid: int = VID, pid: int = PID) -> bool:
     return find_programming_path(vid, pid) is not None
 
 
+def detect() -> dict | None:
+    """Look for any macropad this program can talk to.
+
+    The same protocol covers several vendor:product pairs, so all of them are
+    scanned instead of only the one that happens to be in the profile: plenty of
+    people own a compatible board with different identifiers.
+
+    Returns ``{"vid", "pid", "family", "path"}`` for the first one found.
+    """
+    from . import models
+
+    for vid, pid in models.known_pairs():
+        path = find_programming_path(vid, pid)
+        if path is not None:
+            return {"vid": vid, "pid": pid,
+                    "family": models.family_of(vid, pid), "path": path}
+    return None
+
+
+def detect_unsupported() -> dict | None:
+    """Look for a macropad of a family that is recognised but not implemented yet.
+
+    Worth telling apart from "nothing plugged in": the honest answer is that the
+    device exists and this program cannot speak to it yet.
+    """
+    from . import models
+
+    pending = tuple(f for f in models.FAMILIES if f not in models.SUPPORTED_FAMILIES)
+    for vid, pid in models.known_pairs(pending):
+        if find_programming_path(vid, pid) is not None:
+            return {"vid": vid, "pid": pid, "family": models.family_of(vid, pid)}
+    return None
+
+
 def set_led(color: str, mode: str = "backlight", layer: int = 0,
             vid: int = VID, pid: int = PID) -> None:
     """Change ONLY the lighting, without rewriting the key bindings (about 20 ms).
@@ -75,11 +109,38 @@ def set_led(color: str, mode: str = "backlight", layer: int = 0,
         dev.close()
 
 
-def flash(profile: Profile, vid: int = VID, pid: int = PID, inter_delay: float = 0.002) -> int:
+def resolve(profile: Profile | None = None) -> dict | None:
+    """The device to talk to: the one in the profile, otherwise any known one.
+
+    Trying the profile first keeps the choice predictable when two boards are
+    plugged in, and falling back to a scan means a compatible keyboard with
+    different identifiers still works instead of being reported as missing.
+    """
+    from . import models
+
+    if profile is not None:
+        try:
+            vid, pid = profile.device.usb_ids()
+        except (TypeError, ValueError):
+            vid = pid = None
+        if vid is not None:
+            path = find_programming_path(vid, pid)
+            if path is not None:
+                return {"vid": vid, "pid": pid,
+                        "family": models.family_of(vid, pid), "path": path}
+    return detect()
+
+
+def flash(profile: Profile, vid: int | None = None, pid: int | None = None,
+          inter_delay: float = 0.002) -> int:
     """Write the profile into the keyboard over HID. Returns how many messages were sent."""
     import hid
 
-    path = find_programming_path(vid, pid)
+    if vid is not None and pid is not None:
+        path = find_programming_path(vid, pid)
+    else:
+        found = resolve(profile)
+        path, vid, pid = (found["path"], found["vid"], found["pid"]) if found else (None, 0, 0)
     if path is None:
         raise HidFlasherError(
             f"Cannot find the programming interface of {vid:04x}:{pid:04x} "

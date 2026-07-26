@@ -60,13 +60,22 @@ def build_default_profile(device: Device | None = None) -> Profile:
 def cmd_detect(args: argparse.Namespace) -> int:
     from . import hid_flasher
 
-    dev = Device()
-    if hid_flasher.is_connected():
-        print(f"[ok] keyboard {dev.vid}:{dev.pid} found (programming interface MI_00)")
+    found = hid_flasher.detect()
+    if found:
+        print(f"[ok] keyboard {found['vid']:04x}:{found['pid']:04x} found "
+              f"({found['family']} family, programming interface MI_00)")
         ok = True
     else:
-        print(f"[warn] cannot see keyboard {dev.vid}:{dev.pid} (is it plugged in?)")
         ok = False
+        other = hid_flasher.detect_unsupported()
+        if other:
+            # Saying "not plugged in" here would be a lie and would send the user
+            # chasing a cable that is fine.
+            print(f"[warn] keyboard {other['vid']:04x}:{other['pid']:04x} found, but its "
+                  f"{other['family']} protocol is not supported yet. Please report it at "
+                  "https://github.com/Mun1to/hotkeyconfig/issues")
+        else:
+            print("[warn] cannot see any supported keyboard (is it plugged in?)")
     # The ch57x binary is OPTIONAL: HID flashing does not need it.
     try:
         print(f"[info] ch57x-keyboard-tool (optional): {flasher.find_binary()}")
@@ -111,7 +120,7 @@ def cmd_flash(args: argparse.Namespace) -> int:
 
     # Default backend: native HID (no Zadig, no drivers).
     from . import hid_flasher
-    if not hid_flasher.is_connected():
+    if hid_flasher.resolve(profile) is None:
         print("[error] cannot see the keyboard. Plug it in and retry (or use --backend ch57x).")
         return 1
     print("[..] writing over native HID…")

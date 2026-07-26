@@ -6,9 +6,12 @@ const ORDER = ["unassigned", "run", "open", "text", "media", "native", "hotkey",
 const LED_MODE_KEYS = ["keep", "off", "backlight", "press", "shock", "shock2"];
 const LED_COLOR_KEYS = ["white", "red", "orange", "yellow", "green", "cyan", "blue", "purple"];
 const ORIENT_KEYS = ["normal", "upsidedown", "clockwise", "counterclockwise"];
+const SIDE_KEYS = ["top", "right", "bottom", "left"];   // donde estan las perillas
 const LED_HEX = { white: "#eeeeee", red: "#e24b4a", orange: "#ef9f27", yellow: "#f2d024", green: "#63c132", cyan: "#22c1c1", blue: "#3b82f6", purple: "#8b5cf6" };
 const TYPE_COLOR = { unassigned: "var(--muted)", run: "var(--c-run)", open: "var(--c-open)", text: "var(--c-text)", media: "var(--c-media)", native: "var(--c-native)", hotkey: "var(--c-hotkey)", window: "var(--c-window)", sequence: "var(--c-sequence)" };
 let BROWSERS = [];   // los que hay instalados, los da el sistema al arrancar
+let MODELS = [];     // catalogo de teclados, lo da el backend al arrancar
+const CUSTOM_ID = "custom";
 const TYPE_FIELDS = {
   run: [{ k: "cmd", ph: "py C:/scripts/deploy.py" }, { k: "cwd", ph: "" }],
   open: [{ k: "target", ph: "https://github.com/Mun1to" },
@@ -40,11 +43,15 @@ const T = {
     hint_sequence: "Varias acciones en orden (se edita en profile.yaml).",
     fld_cmd: "Comando", fld_cwd: "Carpeta (opcional)", fld_target: "Destino", fld_text: "Texto", fld_key: "Tecla", fld_send: "Atajo", fld_do: "Operación",
     fld_browser: "Navegador (solo para enlaces)", browser_default: "El del sistema",
+    u_keys: "teclas", u_and: "y", u_knob: "perilla", u_knobs: "perillas",
+    model_custom: "Otro (a medida)", model_pending: "todavía no compatible",
+    note_single_modifier: "En este modelo, de una secuencia de teclas solo se guardan los modificadores de la primera.",
     led_keep: "No tocar", led_off: "Apagada", led_backlight: "Fija", led_press: "Al pulsar", led_shock: "Onda", led_shock2: "Onda 2",
     white: "Blanco", red: "Rojo", orange: "Naranja", yellow: "Amarillo", green: "Verde", cyan: "Cian", blue: "Azul", purple: "Morado",
     or_normal: "Normal", or_upsidedown: "Del revés", or_clockwise: "90° horario", or_counterclockwise: "90° antihorario",
-    knob_ccw: "◀ izq.", knob_press: "● pulsar", knob_cw: "der. ▶", key_word: "Tecla", knob_word: "Perilla", action_word: "Acción",
-    connected: "teclado conectado", disconnected: "teclado no detectado", listen_start: "Iniciar listener", listen_stop: "Parar listener",
+    side_top: "Arriba", side_right: "A la derecha", side_bottom: "Abajo", side_left: "A la izquierda",
+    knob_ccw: "◀ Izquierda", knob_press: "● Pulsar", knob_cw: "▶ Derecha", key_word: "Tecla", knob_word: "Perilla", action_word: "Acción",
+    connected: "teclado conectado", disconnected: "teclado no detectado", dev_unsupported: "teclado aún no compatible", listen_start: "Iniciar listener", listen_stop: "Parar listener",
     saved: "Guardado", executed: "Ejecutado", flashing: "Flasheando…", flashed: "Teclado grabado", listener_on: "Listener activo", listener_off: "Listener detenido", layout_applied: "Estructura aplicada",
     version_available: "Versión {v} disponible", update_now: "Actualizar", download: "Descargar", updating: "Descargando actualización…",
     confirm_flash: "Se grabarán los combos y la iluminación en la MEMORIA del teclado. ¿Continuar?",
@@ -71,11 +78,15 @@ const T = {
     hint_sequence: "Several actions in order (edit in profile.yaml).",
     fld_cmd: "Command", fld_cwd: "Folder (optional)", fld_target: "Target", fld_text: "Text", fld_key: "Key", fld_send: "Shortcut", fld_do: "Operation",
     fld_browser: "Browser (links only)", browser_default: "System default",
+    u_keys: "keys", u_and: "and", u_knob: "knob", u_knobs: "knobs",
+    model_custom: "Other (custom)", model_pending: "not supported yet",
+    note_single_modifier: "On this model, only the modifiers of the first key in a sequence are stored.",
     led_keep: "Leave as is", led_off: "Off", led_backlight: "Solid", led_press: "On press", led_shock: "Wave", led_shock2: "Wave 2",
     white: "White", red: "Red", orange: "Orange", yellow: "Yellow", green: "Green", cyan: "Cyan", blue: "Blue", purple: "Purple",
     or_normal: "Normal", or_upsidedown: "Upside down", or_clockwise: "90° clockwise", or_counterclockwise: "90° counter-clockwise",
-    knob_ccw: "◀ left", knob_press: "● press", knob_cw: "right ▶", key_word: "Key", knob_word: "Knob", action_word: "Action",
-    connected: "keyboard connected", disconnected: "keyboard not found", listen_start: "Start listener", listen_stop: "Stop listener",
+    side_top: "On top", side_right: "On the right", side_bottom: "Below", side_left: "On the left",
+    knob_ccw: "◀ Left", knob_press: "● Press", knob_cw: "▶ Right", key_word: "Key", knob_word: "Knob", action_word: "Action",
+    connected: "keyboard connected", disconnected: "keyboard not found", dev_unsupported: "keyboard not supported yet", listen_start: "Start listener", listen_stop: "Stop listener",
     saved: "Saved", executed: "Done", flashing: "Flashing…", flashed: "Keyboard written", listener_on: "Listener running", listener_off: "Listener stopped", layout_applied: "Structure applied",
     version_available: "Version {v} available", update_now: "Update", download: "Download", updating: "Downloading update…",
     confirm_flash: "This writes the combos and lighting into the keyboard's MEMORY. Continue?",
@@ -175,7 +186,14 @@ function enhanceSelect(sel) {
     cselGlobalWired = true;
     document.addEventListener("click", () => closeAllMenus());
     window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllMenus(); });
-    window.addEventListener("scroll", () => closeAllMenus(), true);
+    // Al hacer scroll en la pagina el menu (position:fixed) quedaria descolgado de
+    // su boton, asi que se cierra. Pero un menu con muchas opciones tiene su propia
+    // barra de scroll: usarla NO debe cerrarlo.
+    window.addEventListener("scroll", (e) => {
+      const t = e.target;
+      if (t && t.closest && t.closest(".csel-menu")) return;
+      closeAllMenus();
+    }, true);
     window.addEventListener("resize", () => closeAllMenus());
   }
   return enh;
@@ -332,13 +350,25 @@ function renderLayoutBar() {
   const d = state.profile.device;
   $("lbRows").textContent = d.rows; $("lbCols").textContent = d.columns; $("lbKnobs").textContent = d.knobs;
   $("lbOrient").innerHTML = ORIENT_KEYS.map((k) => `<option value="${k}" ${k === d.orientation ? "selected" : ""}>${tr("or_" + k)}</option>`).join("");
+  const side = d.knob_side || "top";
+  $("lbSide").innerHTML = SIDE_KEYS.map((k) => `<option value="${k}" ${k === side ? "selected" : ""}>${tr("side_" + k)}</option>`).join("");
+  // Sin perillas no hay nada que colocar. Se oculta el contenedor por id: el padre
+  // del select es el envoltorio que le pone el desplegable propio.
+  $("lbSideWrap").style.display = d.knobs ? "" : "none";
+  renderModelBar();
 }
 function renderPad() {
   const dev = state.profile.device, layer = state.profile.layers[state.layer];
+  $("pad").className = "pad side-" + (dev.knob_side || "top");
   const subs = [["ccw", tr("knob_ccw")], ["press", tr("knob_press")], ["cw", tr("knob_cw")]];
   $("knobs").innerHTML = layer.knobs.map((kn, ki) => `
-    <div class="knob"><div class="circle">${svg("media")}</div><div class="klabel">${tr("knob_word")} ${ki + 1}</div>
-      <div class="chips">${subs.map(([s, lbl]) => `<div class="chip" data-knob="${ki}" data-sub="${s}"><span>${lbl}</span><span class="cv">${esc(summary(kn[s].action))}</span></div>`).join("")}</div></div>`).join("");
+    <div class="knob">
+      <div class="khead"><div class="circle">${svg("media")}</div><div class="klabel">${tr("knob_word")} ${ki + 1}</div></div>
+      <div class="chips">${subs.map(([s, lbl]) => {
+        const txt = summary(kn[s].action);
+        return `<div class="chip" data-knob="${ki}" data-sub="${s}"><span class="cl">${lbl}</span><span class="cv">${esc(txt === "—" ? "" : txt)}</span></div>`;
+      }).join("")}</div>
+    </div>`).join("");
   const dims = gridDims(dev.rows, dev.columns, dev.orientation), g = $("grid");
   g.style.gridTemplateColumns = `repeat(${dims.c}, minmax(74px, 96px))`;
   let cells = "";
@@ -371,7 +401,16 @@ let toastT;
 function toast(msg, kind) { const t = $("toast"); t.textContent = msg; t.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => (t.className = "toast"), 2600); }
 function setListenerBtn() { const b = $("listenBtn"); b.querySelector("span").textContent = state.listener ? tr("listen_stop") : tr("listen_start"); b.querySelector("svg").innerHTML = state.listener ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>' : '<path d="M8 5v14l11-7z"/>'; }
 async function pollStatus() {
-  try { const s = await api().status(); state.listener = s.listener; $("devPill").className = "pill" + (s.connected ? " on" : ""); $("devTxt").textContent = s.connected ? tr("connected") : tr("disconnected"); setListenerBtn(); } catch (e) { /* */ }
+  try {
+    const s = await api().status(); state.listener = s.listener;
+    $("devPill").className = "pill" + (s.connected ? " on" : "");
+    // Un teclado reconocido pero de una familia sin soporte no es "desconectado":
+    // decirlo asi manda al usuario a revisar un cable que esta perfecto.
+    $("devTxt").textContent = s.connected ? tr("connected")
+      : (s.unsupported ? tr("dev_unsupported") : tr("disconnected"));
+    $("lbUsb").textContent = s.usb || "";
+    setListenerBtn();
+  } catch (e) { /* */ }
 }
 function refreshUpdateBar() {
   const u = state.update; if (!u || !u.update_available) return;
@@ -426,6 +465,47 @@ function showTourStep() {
   }));
 }
 
+// --- modelo de teclado ----------------------------------------------------
+// Se elige el teclado que uno tiene, no unas medidas libres: un macropad de 7x9
+// no existe, y configurarlo solo lleva a una decepcion. Los deslizantes siguen
+// ahi para variantes raras, detras de "Otro (a medida)".
+function modelName(m) {
+  if (m.id === CUSTOM_ID) return tr("model_custom");
+  const keys = m.keys + " " + tr("u_keys");
+  if (!m.knobs) return keys;
+  return keys + " " + tr("u_and") + " " + m.knobs + " " + tr(m.knobs === 1 ? "u_knob" : "u_knobs");
+}
+
+function renderModelBar() {
+  const d = state.profile.device;
+  const sel = $("lbModel");
+  const opciones = MODELS.concat([{ id: CUSTOM_ID }]);
+  sel.innerHTML = opciones.map((m) => {
+    const marca = m.supported === false ? " • " + tr("model_pending") : "";
+    return `<option value="${m.id}" ${m.id === d.model ? "selected" : ""}>${esc(modelName(m) + marca)}</option>`;
+  }).join("");   // el enhancer se resincroniza solo al cambiar los options
+  $("lbCustom").style.display = d.model === CUSTOM_ID ? "" : "none";
+  const actual = MODELS.filter((m) => m.id === d.model)[0];
+  $("lbNote").textContent = actual && actual.note ? tr(actual.note) : "";
+}
+
+async function pickModel(id) {
+  const d = state.profile.device;
+  if (id === d.model) return;
+  if (id === CUSTOM_ID) { d.model = id; markDirty(); renderModelBar(); return; }
+  const m = MODELS.filter((x) => x.id === id)[0];
+  if (!m) return;
+  const igual = m.rows === d.rows && m.columns === d.columns && m.knobs === d.knobs;
+  if (!igual && !(await confirmDialog(tr("confirm_layout")))) { renderModelBar(); return; }
+  if (!igual) {
+    state.profile = await api().resize_layout(state.profile, m.rows, m.columns, m.knobs, d.orientation);
+    if (state.layer >= state.profile.layers.length) state.layer = 0;
+  }
+  state.profile.device.model = id;
+  markDirty(); renderAll();
+  if (!igual) toast(tr("layout_applied"), "ok");
+}
+
 // --- layout inline --------------------------------------------------------
 async function changeLayout(dim, delta) {
   const d = state.profile.device;
@@ -464,6 +544,8 @@ function wire() {
 
   document.querySelector(".layoutbar").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
   $("lbOrient").onchange = (e) => { state.profile.device.orientation = e.target.value; markDirty(); renderPad(); };
+  $("lbModel").onchange = (e) => pickModel(e.target.value);
+  $("lbSide").onchange = (e) => { state.profile.device.knob_side = e.target.value; markDirty(); renderPad(); };
 
   $("addHotkey").onclick = async () => { const combo = await captureKey("cap_shortcut"); if (!combo) return; const h = { combo, action: { type: "unassigned" } }; state.profile.hotkeys.push(h); markDirty(); renderHotkeys(); openEditor(h.action, combo, () => { markDirty(); renderHotkeys(); }); };
   $("hotkeys").addEventListener("click", (e) => { const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"); if (ed) { const h = state.profile.hotkeys[+ed.dataset.edit]; openEditor(h.action, h.combo, () => { markDirty(); renderHotkeys(); }); } if (del) { state.profile.hotkeys.splice(+del.dataset.del, 1); markDirty(); renderHotkeys(); } });
@@ -499,6 +581,7 @@ function setLed() { const mode = $("ledMode").value, color = $("ledColor").value
 async function init() {
   state.profile = await api().get_profile();
   try { BROWSERS = await api().browsers() || []; } catch (e) { BROWSERS = []; }
+  try { MODELS = await api().models() || []; } catch (e) { MODELS = []; }
   wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
   checkUpdate();
   // El tour no se lanza solo al abrir (molestaba en cada arranque). Esta a un clic

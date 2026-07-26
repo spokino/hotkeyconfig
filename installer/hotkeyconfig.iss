@@ -3,9 +3,13 @@
 ;   (o)      & "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DMyAppVersion=x.y.z installer\hotkeyconfig.iss
 ; Genera dist\hotkeyconfig-<version>-setup.exe a partir de dist\hotkeyconfig (build de PyInstaller).
 
-#define MyAppName "hotkeyconfig"
+; Nombre visible (listado de programas, menu inicio, asistente). El identificador
+; sigue siendo "hotkeyconfig" en minusculas: AppId, carpeta y ejecutable no cambian,
+; asi una actualizacion reemplaza la instalacion anterior en vez de duplicarla.
+#define MyAppName "HotKeyConfig"
+#define MyAppDirName "hotkeyconfig"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.4.1"
+  #define MyAppVersion "0.5.0"
 #endif
 #define MyAppPublisher "Munir Torres"
 #define MyAppURL "https://github.com/Mun1to/hotkeyconfig"
@@ -19,7 +23,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={autopf}\{#MyAppDirName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}

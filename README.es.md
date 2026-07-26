@@ -91,9 +91,32 @@ ejecutar nada.
 
 ## 🎹 Hardware compatible
 
-Macropads con el chip **ch57x** (también vendidos como k884x), identificados por USB como
-`1189:8842`. El modelo habitual es de **12 teclas + 2 perillas + 3 capas**, pero el layout es
-configurable, así que también valen otros tamaños.
+Macropads con el chip **ch57x**. Estos teclados se venden con mil nombres distintos y sin ningún
+número de modelo impreso, así que en la app eliges el tuyo por lo que se puede contar: cuántas
+teclas y cuántas perillas tiene.
+
+| Forma | Teclas | Perillas | Estado |
+|-------|--------|----------|--------|
+| 3 teclas y 1 perilla | 3 | 1 | compatible [^mod] |
+| 4 teclas | 4 | 0 | compatible |
+| 6 teclas y 1 perilla | 6 | 1 | compatible |
+| 9 teclas y 2 perillas | 9 | 2 | compatible |
+| **12 teclas y 2 perillas** | 12 | 2 | **compatible, verificado en hardware real** |
+| 12 teclas y 3 perillas | 12 | 3 | compatible |
+| 15 teclas y 3 perillas | 15 | 3 | compatible |
+| 16 teclas y 3 perillas | 16 | 3 | todavía no, necesita su propio protocolo |
+
+[^mod]: En este modelo el firmware solo guarda los modificadores de la primera tecla de una secuencia.
+
+Por identificador USB: `1189:8840`, `1189:8842`, `1189:8850` y `514c:8851` hablan el protocolo que
+implementa este programa. El `1189:8890` y el `514c:8850` se reconocen y se nombran, pero todavía no
+se pueden programar porque usan otros protocolos. Si tienes uno,
+[cuéntalo en un issue](https://github.com/Mun1to/hotkeyconfig/issues) y, si puedes, adjunta una
+captura USB: es lo que permite añadirlo.
+
+Solo el modelo de 12 teclas y 2 perillas está verificado en hardware real, que es el que tiene su
+autor. El resto comparten protocolo y deberían funcionar; se agradece que lo confirmes en cualquier
+caso.
 
 ```
  [ T1 ][ T2 ][ T3 ][ T4 ]      ( P1 )

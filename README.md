@@ -87,9 +87,30 @@ The app checks GitHub Releases and offers the new version in a banner. Updates a
 
 ## 🎹 Supported hardware
 
-Macropads built on the **ch57x** chip family (also sold as k884x), identified as USB `1189:8842`.
-The common model is **12 keys + 2 knobs + 3 layers**, but the layout is configurable, so other
-sizes work too.
+Macropads built on the **ch57x** chip family. These boards are sold under dozens of names with no
+model number printed anywhere, so pick yours in the app by what you can count: how many keys and
+how many knobs.
+
+| Shape | Keys | Knobs | Status |
+|-------|------|-------|--------|
+| 3 keys and 1 knob | 3 | 1 | supported [^mod] |
+| 4 keys | 4 | 0 | supported |
+| 6 keys and 1 knob | 6 | 1 | supported |
+| 9 keys and 2 knobs | 9 | 2 | supported |
+| **12 keys and 2 knobs** | 12 | 2 | **supported, verified on real hardware** |
+| 12 keys and 3 knobs | 12 | 3 | supported |
+| 15 keys and 3 knobs | 15 | 3 | supported |
+| 16 keys and 3 knobs | 16 | 3 | not yet, needs its own protocol |
+
+[^mod]: On this one the firmware only stores the modifiers of the first key in a sequence.
+
+By USB identifier: `1189:8840`, `1189:8842`, `1189:8850` and `514c:8851` speak the protocol this
+program implements. `1189:8890` and `514c:8850` are recognised and named, but not programmable yet:
+they use different protocols. If you own one, [say so in an issue](https://github.com/Mun1to/hotkeyconfig/issues)
+and bring a USB capture if you can, that is what makes adding it possible.
+
+Only the 12 keys and 2 knobs model has been verified against real hardware, which is the one its
+author owns. The rest share the same protocol and should work; reports are welcome either way.
 
 ```
  [ T1 ][ T2 ][ T3 ][ T4 ]      ( K1 )

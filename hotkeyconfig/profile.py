@@ -13,7 +13,7 @@ from typing import Any
 
 import yaml
 
-from . import combos
+from . import combos, models
 
 # Recognised action types. "native" is written straight into the keyboard (it does
 # not go through the runtime); the rest fire when the unique combo is detected.
@@ -121,17 +121,33 @@ class Device:
     columns: int = combos.COLUMNS
     knobs: int = combos.KNOBS
     orientation: str = "normal"  # normal | upsidedown | clockwise | counterclockwise (as mounted)
+    # Where the knobs sit on the actual board. Only affects how it is drawn, but
+    # a drawing that does not match what is on the desk is a drawing that lies.
+    knob_side: str = "top"       # top | right | bottom | left
+    # Which model of the catalogue this is. The grid above stays as the source of
+    # truth so older profiles keep working; this only records what was picked.
+    model: str = models.DEFAULT_MODEL
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Device":
-        return cls(**{k: data[k] for k in data if k in cls.__annotations__})
+        device = cls(**{k: data[k] for k in data if k in cls.__annotations__})
+        # A profile written before the catalogue existed has no model, so it is
+        # worked out from its shape.
+        device.model = models.matching(data.get("model"), device.rows,
+                                       device.columns, device.knobs)
+        return device
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name, "vid": self.vid, "pid": self.pid,
+            "model": self.model,
             "rows": self.rows, "columns": self.columns, "knobs": self.knobs,
-            "orientation": self.orientation,
+            "orientation": self.orientation, "knob_side": self.knob_side,
         }
+
+    def usb_ids(self) -> tuple[int, int]:
+        """vendor and product as numbers. They are stored as hex text (``"1189"``)."""
+        return int(str(self.vid), 16), int(str(self.pid), 16)
 
 
 @dataclass

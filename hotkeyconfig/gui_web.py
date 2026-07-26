@@ -47,12 +47,26 @@ class Api:
             prof = Profile.from_dict(data)
             prof.validate()
             save(prof, self.profile_path)
-            if not hid_flasher.is_connected():
+            if hid_flasher.resolve(prof) is None:
+                other = hid_flasher.detect_unsupported()
+                if other:
+                    return {"ok": False, "error":
+                            f"Your keyboard ({other['vid']:04x}:{other['pid']:04x}) is "
+                            f"recognised, but its {other['family']} protocol is not "
+                            "supported yet."}
                 return {"ok": False, "error": "I cannot see the keyboard connected."}
             n = hid_flasher.flash(prof)
             return {"ok": True, "n": n}
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
+
+    def models(self) -> list[dict]:
+        """The catalogue of keyboard shapes, for the model picker."""
+        from . import models as models_mod
+        return [{"id": m.id, "keys": m.keys, "rows": m.rows, "columns": m.columns,
+                 "knobs": m.knobs, "family": m.family, "note": m.note,
+                 "supported": m.family in models_mod.SUPPORTED_FAMILIES}
+                for m in models_mod.CATALOGUE]
 
     def browsers(self) -> list[dict]:
         """Installed browsers, to pick one in an 'open' action."""
@@ -77,7 +91,13 @@ class Api:
         from .cli import build_default_profile
         from .profile import Device, Profile
         old = Profile.from_dict(current)
-        dev = Device(rows=int(rows), columns=int(columns), knobs=int(knobs), orientation=orientation)
+        # Name and USB ids belong to the keyboard, not to its shape: rebuilding the
+        # device from scratch used to reset them to the defaults, which now matters
+        # because several different vendor:product pairs are supported.
+        dev = Device(name=old.device.name, vid=old.device.vid, pid=old.device.pid,
+                     model=old.device.model, rows=int(rows), columns=int(columns),
+                     knobs=int(knobs), orientation=orientation,
+                     knob_side=old.device.knob_side)
         new = build_default_profile(dev)
         for li, layer in enumerate(new.layers):
             if li >= len(old.layers):
@@ -114,11 +134,22 @@ class Api:
 
     def status(self) -> dict:
         running = self.listener is not None and self.listener.poll() is None
+        found = unsupported = None
         try:
-            connected = hid_flasher.is_connected()
+            found = hid_flasher.detect()
+            if found is None:
+                unsupported = hid_flasher.detect_unsupported()
         except Exception:  # noqa: BLE001
-            connected = False
-        return {"connected": connected, "listener": running}
+            pass
+        return {
+            "connected": found is not None,
+            "listener": running,
+            # A recognised keyboard that cannot be programmed yet deserves a clearer
+            # message than "not connected".
+            "usb": f"{found['vid']:04x}:{found['pid']:04x}" if found else
+                   (f"{unsupported['vid']:04x}:{unsupported['pid']:04x}" if unsupported else ""),
+            "unsupported": unsupported["family"] if unsupported else "",
+        }
 
     def start_listener(self) -> dict:
         if not (self.listener and self.listener.poll() is None):
@@ -131,6 +162,22 @@ class Api:
             self.listener.terminate()
             self.listener = None
         return {"listener": False}
+
+
+def _free_port() -> int:
+    """A port nobody else is using, asked to the system.
+
+    pywebview serves the interface from a local HTTP server on a fixed port, and
+    when that port is already taken it cheerfully loads from whoever is answering
+    there. With two versions of the program open, the newer window ends up showing
+    the interface of the older one: new logic, old controls, and hours lost
+    chasing a bug that was never in the code. One server per window avoids it.
+    """
+    import socket
+
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
 
 
 def run(profile_path: str | Path) -> int:
@@ -146,7 +193,9 @@ def run(profile_path: str | Path) -> int:
 
     api = Api(profile_path)
     webview.create_window(
-        "hotkeyconfig", url=str(INDEX), js_api=api,
+        # Nombre para la gente. El paquete, el comando y el repositorio siguen
+        # siendo hotkeyconfig en minusculas: eso es un identificador, no un rotulo.
+        "HotKeyConfig", url=str(INDEX), js_api=api,
         width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )
@@ -154,5 +203,5 @@ def run(profile_path: str | Path) -> int:
     # with the default private mode it was wiped on close. storage_path points at a
     # writable user folder (not the program directory, which can be read only).
     storage = os.path.join(os.environ.get("LOCALAPPDATA") or str(Path.home()), "hotkeyconfig", "webview")
-    webview.start(private_mode=False, storage_path=storage)
+    webview.start(private_mode=False, storage_path=storage, http_port=_free_port())
     return 0

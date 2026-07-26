@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>hotkeyconfig</title>
+<title>HotKeyConfig</title>
 <style>
   /* Tema Tier A: sigue al sistema por CSS, sin botón (política de la casa). */
   :root{
@@ -63,17 +63,34 @@
   .stepper button:hover{border-color:var(--accent); color:var(--accent)}
   .stepper .val{min-width:16px; text-align:center; color:var(--text); font-weight:600}
   .layoutbar select{background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:4px 6px; font-size:12px}
+  .usbtag{margin-left:auto; font-size:11px; color:var(--muted); font-family:ui-monospace,Consolas,monospace}
+  .modelnote{font-size:11px; color:var(--muted); margin:-6px 2px 12px; min-height:0}
+  .modelnote:empty{display:none}
 
   .pad{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; max-width:660px; margin:0 auto}
-  .knobs{display:flex; gap:14px; justify-content:center; margin-bottom:14px; flex-wrap:wrap}
-  .knob{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; min-width:148px}
-  .knob .circle{width:44px; height:44px; border-radius:50%; border:3px solid var(--accent); display:flex; align-items:center; justify-content:center; color:var(--accent)}
-  .knob .circle svg{width:22px; height:22px}
-  .knob .klabel{font-size:11px; color:var(--muted)}
-  .chips{display:flex; gap:6px; width:100%}
-  .chip{flex:1; font-size:11px; padding:6px 4px; border-radius:7px; background:var(--surface); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted)}
-  .chip:hover{border-color:var(--accent)}
-  .chip .cv{font-size:10px; color:var(--text); max-width:74px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  /* El dibujo imita al teclado de verdad: las perillas van donde las tenga el
+     usuario. En el DOM van despues de la rejilla, de ahi los -reverse. */
+  .padinner{display:flex; gap:14px; align-items:center; justify-content:center}
+  .pad.side-top .padinner{flex-direction:column-reverse}
+  .pad.side-bottom .padinner{flex-direction:column}
+  .pad.side-right .padinner{flex-direction:row}
+  .pad.side-left .padinner{flex-direction:row-reverse}
+  .pad.side-left .knobs, .pad.side-right .knobs{flex-direction:column; flex-wrap:nowrap}
+  .knobs{display:flex; gap:14px; justify-content:center; flex-wrap:wrap}
+  /* Cada accion de la perilla ocupa su propia linea: etiqueta a la izquierda y lo
+     que hace a la derecha. En tres columnas el texto no cabia y se cortaba, que es
+     justo lo que uno necesita leer. */
+  .knob{background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:11px 12px; display:flex; flex-direction:column; gap:9px; width:212px}
+  .khead{display:flex; align-items:center; gap:9px}
+  .knob .circle{width:30px; height:30px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; color:var(--accent); flex:none}
+  .knob .circle svg{width:16px; height:16px}
+  .knob .klabel{font-size:12px; color:var(--text); font-weight:600; letter-spacing:.2px}
+  .chips{display:flex; flex-direction:column; gap:5px; width:100%}
+  .chip{font-size:11px; padding:7px 9px; border-radius:8px; background:var(--surface); border:1px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); transition:border-color .12s, background .12s}
+  .chip:hover{border-color:var(--accent); background:var(--surface2)}
+  .chip .cl{display:flex; align-items:center; gap:5px; white-space:nowrap; flex:none}
+  .chip .cv{font-size:11px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right}
+  .chip .cv:empty::after{content:"—"; color:var(--muted)}
   .grid{display:grid; gap:8px; justify-content:center}
   .key{min-height:74px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:6px; overflow:hidden; transition:transform .05s}
   .key:hover{transform:translateY(-1px)} .key:active{transform:scale(.97)}
@@ -163,7 +180,7 @@
   <header>
     <div class="brand">
       <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M7 12h10M6 16h12"/></svg>
-      hotkeyconfig
+      HotKeyConfig
     </div>
     <div class="htools">
       <span class="pill" id="devPill"><span class="dot"></span><span id="devTxt">…</span></span>
@@ -203,15 +220,25 @@
         </div>
       </div>
       <div class="layoutbar">
-        <span data-en="Structure:">Estructura:</span>
-        <span class="stepper"><button data-d="rows" data-v="-1">−</button><span class="val" id="lbRows">3</span><button data-d="rows" data-v="1">+</button> <span data-en="rows">filas</span></span>
-        <span class="stepper"><button data-d="cols" data-v="-1">−</button><span class="val" id="lbCols">4</span><button data-d="cols" data-v="1">+</button> <span data-en="columns">columnas</span></span>
-        <span class="stepper"><button data-d="knobs" data-v="-1">−</button><span class="val" id="lbKnobs">2</span><button data-d="knobs" data-v="1">+</button> <span data-en="knobs">perillas</span></span>
+        <span data-en="Your keyboard">Tu teclado</span>
+        <select id="lbModel"></select>
+        <!-- Los deslizantes solo salen con "Otro (a medida)": las medidas libres
+             permiten configurar teclados que no existen. -->
+        <span class="stepper" id="lbCustom" style="display:none">
+          <span class="stepper"><button data-d="rows" data-v="-1">−</button><span class="val" id="lbRows">3</span><button data-d="rows" data-v="1">+</button> <span data-en="rows">filas</span></span>
+          <span class="stepper"><button data-d="cols" data-v="-1">−</button><span class="val" id="lbCols">4</span><button data-d="cols" data-v="1">+</button> <span data-en="columns">columnas</span></span>
+          <span class="stepper"><button data-d="knobs" data-v="-1">−</button><span class="val" id="lbKnobs">2</span><button data-d="knobs" data-v="1">+</button> <span data-en="knobs">perillas</span></span>
+        </span>
+        <span class="stepper" id="lbSideWrap"><span data-en="Knobs">Perillas</span> <select id="lbSide"></select></span>
         <span class="stepper"><span data-en="Orientation">Orientación</span> <select id="lbOrient"></select></span>
+        <span class="usbtag" id="lbUsb"></span>
       </div>
-      <div class="pad">
-        <div class="knobs" id="knobs"></div>
-        <div class="grid" id="grid"></div>
+      <div class="modelnote" id="lbNote"></div>
+      <div class="pad" id="pad">
+        <div class="padinner">
+          <div class="grid" id="grid"></div>
+          <div class="knobs" id="knobs"></div>
+        </div>
       </div>
     </div>
 
