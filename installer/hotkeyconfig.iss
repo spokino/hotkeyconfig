@@ -9,7 +9,7 @@
 #define MyAppName "HotKeyConfig"
 #define MyAppDirName "hotkeyconfig"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.5.0"
+  #define MyAppVersion "0.6.0"
 #endif
 #define MyAppPublisher "Munir Torres"
 #define MyAppURL "https://github.com/Mun1to/hotkeyconfig"
@@ -68,3 +68,8 @@ Filename: "{app}\{#MyAppExeName}"; Flags: nowait; Check: WizardSilent
 [UninstallRun]
 ; Al desinstalar, quita el arranque automatico.
 Filename: "{app}\{#MyAppExeName}"; Parameters: "autostart uninstall"; Flags: runhidden; RunOnceId: "RemoveAutostart"
+
+[UninstallDelete]
+; Los accesos directos de las teclas que funcionan con la app cerrada. Van en su
+; propia subcarpeta, nunca en el grupo del programa, para no borrar nada ajeno.
+Type: filesandordirs; Name: "{userprograms}\{#MyAppName}\Keys"

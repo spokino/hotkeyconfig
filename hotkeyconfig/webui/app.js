@@ -45,6 +45,7 @@ const T = {
     fld_browser: "Navegador (solo para enlaces)", browser_default: "El del sistema",
     u_keys: "teclas", u_and: "y", u_knob: "perilla", u_knobs: "perillas",
     model_custom: "Otro (a medida)", model_pending: "todavía no compatible",
+    alone_failed: "Guardado, pero esto no se puede abrir sin la app",
     note_single_modifier: "En este modelo, de una secuencia de teclas solo se guardan los modificadores de la primera.",
     led_keep: "No tocar", led_off: "Apagada", led_backlight: "Fija", led_press: "Al pulsar", led_shock: "Onda", led_shock2: "Onda 2",
     white: "Blanco", red: "Rojo", orange: "Naranja", yellow: "Amarillo", green: "Verde", cyan: "Cian", blue: "Azul", purple: "Morado",
@@ -80,6 +81,7 @@ const T = {
     fld_browser: "Browser (links only)", browser_default: "System default",
     u_keys: "keys", u_and: "and", u_knob: "knob", u_knobs: "knobs",
     model_custom: "Other (custom)", model_pending: "not supported yet",
+    alone_failed: "Saved, but this cannot be opened without the app",
     note_single_modifier: "On this model, only the modifiers of the first key in a sequence are stored.",
     led_keep: "Leave as is", led_off: "Off", led_backlight: "Solid", led_press: "On press", led_shock: "Wave", led_shock2: "Wave 2",
     white: "White", red: "Red", orange: "Orange", yellow: "Yellow", green: "Green", cyan: "Cyan", blue: "Blue", purple: "Purple",
@@ -250,6 +252,17 @@ function applyLang(lang) {
 }
 
 // --- editor modal ---------------------------------------------------------
+// Windows solo acepta ctrl/alt/shift en la tecla rapida de un acceso directo:
+// rechaza cualquier combinacion con la tecla Windows, que es la que usan las
+// perillas. Comprobado en Windows 11.
+function aloneAllowed(combo) {
+  const p = String(combo || "").toLowerCase().split("+").filter(Boolean);
+  if (p.length < 2) return false;
+  const key = p[p.length - 1];
+  return p.slice(0, -1).every((m) => m === "ctrl" || m === "alt" || m === "shift")
+    && /^(f([1-9]|1[0-9]|2[0-4])|[a-z0-9])$/.test(key);
+}
+
 let edState = null;
 // binding = control completo (tiene .action y .color). Para los atajos del teclado
 // normal no hay luz, asi que se puede pasar solo la accion.
@@ -260,6 +273,8 @@ function openEditor(binding, title, onSave) {
               target: action, binding: hasColor ? binding : null, onSave };
   $("edTitle").textContent = title;
   $("edColorRow").style.display = hasColor ? "" : "none";
+  edState.alone = hasColor && aloneAllowed(binding.combo);
+  $("edAlone").checked = !!binding.standalone;
   if (hasColor) {
     const cur = binding.color || "";
     $("edColor").innerHTML = `<option value="">${tr("no_color")}</option>` +
@@ -274,6 +289,9 @@ function openEditor(binding, title, onSave) {
 function renderEdFields() {
   const t = edState.work.type;
   $("edHint").textContent = tr("hint_" + t);
+  // Solo tiene sentido en "abrir": lo demas (escribir, scripts) necesita que algo
+  // este escuchando, Windows no sabe hacerlo por su cuenta.
+  $("edAloneRow").style.display = (edState.alone && t === "open") ? "" : "none";
   const fields = TYPE_FIELDS[t] || [];
   $("edFields").innerHTML = fields.map((f) => {
     const val = edState.work.params[f.k] != null ? edState.work.params[f.k] : "";
@@ -560,6 +578,8 @@ function wire() {
     if (edState.binding) {
       const c = $("edColor").value;
       if (c) edState.binding.color = c; else delete edState.binding.color;
+      if (edState.alone && w.type === "open" && $("edAlone").checked) edState.binding.standalone = true;
+      else delete edState.binding.standalone;
     }
     const cb = edState.onSave; closeEditor(); cb && cb();
   };
@@ -572,7 +592,17 @@ function wire() {
   $("confirmYes").onclick = () => { $("confirmOverlay").classList.remove("show"); const r = confirmResolve; confirmResolve = null; r && r(true); };
   $("confirmNo").onclick = () => { $("confirmOverlay").classList.remove("show"); const r = confirmResolve; confirmResolve = null; r && r(false); };
 
-  $("saveBtn").onclick = async () => { const r = await api().save_profile(state.profile); if (r.ok) { state.dirty = false; toast(tr("saved"), "ok"); if (state.listener) { await api().stop_listener(); await api().start_listener(); } } else toast(tr("err") + ": " + r.error, "err"); };
+  $("saveBtn").onclick = async () => {
+    const r = await api().save_profile(state.profile);
+    if (!r.ok) { toast(tr("err") + ": " + r.error, "err"); return; }
+    state.dirty = false;
+    // Si alguna tecla marcada como "sin la app" no se pudo entregar a Windows hay
+    // que decirlo: callarlo dejaria una tecla que el usuario cree configurada.
+    const s = r.standalone || {};
+    if (s.skipped && s.skipped.length) toast(tr("alone_failed") + ": " + s.skipped.join(", "), "err");
+    else toast(tr("saved"), "ok");
+    if (state.listener) { await api().stop_listener(); await api().start_listener(); }
+  };
   $("flashBtn").onclick = async () => { if (!(await confirmDialog(tr("confirm_flash")))) return; toast(tr("flashing")); const r = await api().flash(state.profile); toast(r.ok ? `${tr("flashed")} (${r.n})` : tr("err") + ": " + r.error, r.ok ? "ok" : "err"); };
   $("listenBtn").onclick = async () => { const r = state.listener ? await api().stop_listener() : await api().start_listener(); state.listener = r.listener; setListenerBtn(); toast(state.listener ? tr("listener_on") : tr("listener_off"), "ok"); };
 }

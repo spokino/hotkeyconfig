@@ -38,7 +38,8 @@ class Api:
             prof = Profile.from_dict(data)
             prof.validate()
             save(prof, self.profile_path)
-            return {"ok": True}
+            from . import standalone
+            return {"ok": True, "standalone": standalone.sync(prof)}
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
 

@@ -154,6 +154,25 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 | `native` | Se graba en el hardware (volumen, etc.) | `key` |
 | `unassigned` | No hace nada | (ninguno) |
 
+### Que una tecla funcione con la app cerrada
+
+El listener es quien ejecuta tus acciones: sin él, la tecla manda su combinación y no pasa nada. Para
+las acciones de **abrir** hay una salida, marcando **Funciona con la app cerrada** en el editor de la
+tecla. El programa crea entonces un acceso directo de Windows con esa combinación asignada, y quien
+responde es el Explorador, que ya está siempre en marcha.
+
+Lo que conviene saber antes de usarlo:
+
+- Solo sirve para **abrir** programas, carpetas y enlaces. Escribir texto, lanzar scripts o el
+  destello de color siguen necesitando el listener.
+- No vale para las **perillas**: sus combinaciones llevan la tecla Windows y el sistema no la admite
+  en un acceso directo.
+- **No se graba en el teclado.** La configuración vive en Windows, en ese acceso directo. En otro
+  ordenador el teclado seguirá mandando su combinación y allí no ocurrirá nada. Ningún programa puede
+  cambiar eso: un macropad solo sabe enviar pulsaciones.
+- Si cambias la tecla de sitio muchas veces, Windows puede quedarse con la asociación antigua y esa
+  combinación deja de responder. Se arregla reiniciando el Explorador o el equipo.
+
 > Sobre `open`: si dejas `browser` vacío, los enlaces se abren en el navegador del sistema. Si pones
 > el nombre de uno instalado (la interfaz te lista los que encuentra), se abren siempre en ese. En
 > los dos casos la ventana pasa al primer plano, así que al pulsar la tecla vas a lo que acabas de

@@ -68,16 +68,21 @@ class Binding:
     # en reposo, asi que el listener tine el teclado ENTERO un instante y lo devuelve
     # al color de la capa. Requiere que la capa tenga iluminacion configurada.
     color: str | None = None
+    # Hand this key over to Windows through a shortcut with a hotkey, so it works
+    # with nothing of ours running. Only for "open" actions. See standalone.py.
+    standalone: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Binding":
         return cls(combo=data["combo"], action=Action.from_dict(data.get("action")),
-                   color=data.get("color"))
+                   color=data.get("color"), standalone=bool(data.get("standalone", False)))
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {"combo": self.combo, "action": self.action.to_dict()}
         if self.color:
             out["color"] = self.color
+        if self.standalone:
+            out["standalone"] = True
         return out
 
 

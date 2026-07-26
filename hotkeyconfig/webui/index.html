@@ -131,6 +131,16 @@
   .modal label{font-size:13px; color:var(--muted); display:block; margin:10px 0 5px}
   .modal select,.modal input{width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:9px 10px; font-size:13px; font-family:inherit}
   .modal .actions{display:flex; gap:8px; margin-top:16px}
+  /* Cada bloque del editor separado por una linea, para que se lea como secciones
+     y no como un parrafo continuo de texto gris. */
+  .modal .edsection{border-top:1px solid var(--border); margin-top:14px; padding-top:12px}
+  .modal .note{font-size:11.5px; color:var(--muted); line-height:1.45; margin-top:6px}
+  .modal .note.indent{margin-left:25px}
+  .modal .note:empty{display:none}
+  /* Gana a `.modal label{display:block}` y a `.modal input{width:100%}`, que
+     estiraban la casilla a lo ancho y la dejaban sobre el texto. */
+  .modal label.chk{display:flex; align-items:center; gap:9px; margin:0; font-size:13px; color:var(--text); cursor:pointer}
+  .modal label.chk input[type=checkbox]{width:17px; height:17px; flex:none; padding:0; margin:0; accent-color:var(--accent); cursor:pointer}
   .capbox{font-family:ui-monospace,monospace; font-size:16px; text-align:center; padding:16px; border:1px dashed var(--accent); border-radius:10px; color:var(--text); margin:6px 0}
 
   /* Desplegables propios (reemplazan al combo nativo del SO, que rompe el tema) */
@@ -278,13 +288,22 @@
     <h4 id="edTitle">Acción</h4>
     <label data-en="Action">Acción</label>
     <select id="edType"></select>
+    <!-- La explicacion del tipo, pegada al selector que explica. Al final del
+         modal quedaba lejos de aquello a lo que se refiere. -->
+    <div class="note" id="edHint"></div>
     <div id="edFields"></div>
-    <div id="edColorRow">
+    <div class="edsection" id="edColorRow">
       <label data-en="Colour when pressed">Color al pulsar</label>
       <select id="edColor"></select>
-      <div style="font-size:11px;color:var(--muted);margin-top:5px" data-en="The keyboard only shows this colour <b>while you press</b>, and goes back to the layer colour. This hardware cannot colour one key on its own.">El teclado se tiñe de este color <b>solo al pulsar</b> y vuelve al color de la capa. Este hardware no puede colorear una tecla suelta.</div>
+      <div class="note" data-en="Only <b>while you press</b>, then back to the layer colour. This hardware cannot colour one key on its own.">Solo <b>mientras la pulsas</b>, luego vuelve al color de la capa. Este hardware no puede colorear una tecla suelta.</div>
     </div>
-    <div id="edHint" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <!-- Windows ejecuta la accion por su cuenta, con un acceso directo con tecla
+         asignada. Solo para "abrir", y no para las perillas: sus combos llevan la
+         tecla Windows y el sistema no la admite ahi. -->
+    <div class="edsection" id="edAloneRow" style="display:none">
+      <label class="chk"><input type="checkbox" id="edAlone"><span data-en="Works with the app closed">Funciona con la app cerrada</span></label>
+      <div class="note indent" data-en="Windows opens it through a shortcut of its own, so the listener is not needed. Only on this computer, and without the colour flash.">Lo abre Windows con un acceso directo propio, así que no hace falta el listener. Solo en este ordenador, y sin destello de color.</div>
+    </div>
     <div class="actions">
       <button class="btn primary" id="edSave" style="flex:1" data-en="Save">Guardar</button>
       <button class="btn" id="edTest" data-en="Test">Probar</button>

@@ -60,6 +60,11 @@ class Runtime:
                 action = binding.action
                 if action.type in ("native", "unassigned"):
                     continue
+                if binding.standalone:
+                    # Windows takes care of this one through its own shortcut. It must
+                    # not be registered here: the listener swallows what it registers,
+                    # so the combo would never reach Explorer.
+                    continue
                 self._register(keyboard, combos.to_keyboard(binding.combo), label, action,
                                feedback=self._make_feedback(layer_idx, binding.color, base))
 

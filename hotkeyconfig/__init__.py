@@ -6,4 +6,4 @@ optional alternative backend), and a local listener that watches for those combo
 and runs actions (scripts, apps, text, media, windows and so on).
 """
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"

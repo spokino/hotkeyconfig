@@ -147,6 +147,24 @@ Every knob has three actions: turn left, press, turn right.
 | `native` | Written into the hardware (volume and so on) | `key` |
 | `unassigned` | Does nothing | (none) |
 
+### Making a key work with the app closed
+
+The listener is what runs your actions: without it a key sends its combo and nothing happens. For
+**open** actions there is a way out, ticking **Works with the app closed** in the key editor. The
+program then creates a Windows shortcut with that combo assigned to it, and what answers is
+Explorer, which is always running anyway.
+
+Worth knowing before relying on it:
+
+- Only for **opening** programs, folders and links. Typing text, running scripts and the colour
+  flash still need the listener.
+- Not for **knobs**: their combos include the Windows key, which Windows rejects on a shortcut.
+- **It is not stored in the keyboard.** The configuration lives in Windows, in that shortcut. On
+  another computer the keyboard will still send its combo and nothing will happen there. No program
+  can change that: a macropad only knows how to send keystrokes.
+- Moving a key's shortcut around repeatedly can leave Windows holding the old association, and that
+  combo stops responding until Explorer or the machine restarts.
+
 > On `open`: leave `browser` empty and links follow your system default. Set it to the name of an
 > installed browser (the interface lists the ones it finds) and links always open there. Either way
 > the window is brought to the front, so a key press takes you to what you just opened instead of
