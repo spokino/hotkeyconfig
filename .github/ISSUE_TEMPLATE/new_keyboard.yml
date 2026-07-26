@@ -1,0 +1,49 @@
+name: Add support for my keyboard
+description: Ask for a macropad model that is not supported yet
+title: "Support for <vendor:product> "
+labels: ["new hardware"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping widen the hardware support. Every macropad model speaks its
+        own configuration protocol, so adding one means writing a backend for it. The
+        two things below are what make that possible.
+
+  - type: input
+    id: usb-id
+    attributes:
+      label: USB id
+      description: "Run `hotkeyconfig detect`, or check Device Manager. Format: vendor:product."
+      placeholder: "1189:8842"
+    validations:
+      required: true
+
+  - type: input
+    id: layout
+    attributes:
+      label: Layout
+      description: How many keys, knobs and layers does it have?
+      placeholder: "12 keys, 2 knobs, 3 layers"
+    validations:
+      required: true
+
+  - type: textarea
+    id: vendor-software
+    attributes:
+      label: Vendor software
+      description: >
+        Does it come with its own configuration software, and does that software work?
+        If you can capture the USB traffic while it configures the keyboard (Wireshark
+        with USBPcap on Windows), attach it or link it. That capture is what allows the
+        protocol to be replicated; without it there is usually nothing to go on.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before opening
+      options:
+        - label: I have checked that no existing issue covers this model
+          required: true

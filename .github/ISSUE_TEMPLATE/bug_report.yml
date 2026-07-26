@@ -1,0 +1,47 @@
+name: Bug report
+description: Something does not work as it should
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happens
+    attributes:
+      label: What happens
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: hotkeyconfig version
+      description: Shown in the installer, or run `hotkeyconfig --help` from a terminal.
+      placeholder: "0.4.0"
+    validations:
+      required: true
+
+  - type: input
+    id: keyboard
+    attributes:
+      label: Keyboard USB id
+      description: "Output of `hotkeyconfig detect`."
+      placeholder: "1189:8842"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output
+      description: >
+        If it is a listener or flashing problem, run `hotkeyconfig -v run --no-tray`
+        (or `hotkeyconfig flash`) from a terminal and paste what it prints.
+      render: shell
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        **On lighting:** the ch57x cannot hold a different colour on each key. If that is
+        what you are after, it is a hardware limit, explained in
+        [docs/PROTOCOL.md](../blob/main/docs/PROTOCOL.md).
