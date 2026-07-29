@@ -8,6 +8,8 @@ drive the listener.
 from __future__ import annotations
 
 import subprocess
+import threading
+import time
 from pathlib import Path
 
 from . import hid_flasher
@@ -22,6 +24,11 @@ class Api:
     def __init__(self, profile_path: str | Path):
         self.profile_path = Path(profile_path)
         self.listener: subprocess.Popen | None = None
+        # Copy of the profile while it has edits that are not on disk yet, so that
+        # closing the window can offer to save them. See set_pending.
+        self.pending: dict | None = None
+        self.window = None          # se rellena en run()
+        self.close_asked = False    # ya se pregunto que hacer con los cambios
 
     # --- profile ---------------------------------------------------------
     def get_profile(self) -> dict:
@@ -38,10 +45,73 @@ class Api:
             prof = Profile.from_dict(data)
             prof.validate()
             save(prof, self.profile_path)
+            self.pending = None
             from . import standalone
             return {"ok": True, "standalone": standalone.sync(prof)}
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "error": str(exc)}
+
+    def save_device(self, device: dict) -> dict:
+        """Write only the "this is my keyboard" settings, right when they change.
+
+        The model, where the knobs sit and the orientation describe the hardware on
+        the desk; they are not an edit in progress. Losing them on close because the
+        Save button had not been pressed made no sense, the more so as changing the
+        shape did save itself (through resize_layout) while these did not.
+
+        Only the device section is touched: no binding is rewritten and no Windows
+        shortcut is recreated, which is what makes saving on every change safe here.
+        """
+        try:
+            prof = load(self.profile_path) if self.profile_path.exists() else None
+            if prof is None:
+                return {"ok": True}
+            for name in ("model", "knob_side", "orientation"):
+                if name in device:
+                    setattr(prof.device, name, device[name])
+            save(prof, self.profile_path)
+            if self.pending:
+                self.pending.setdefault("device", {}).update(prof.device.to_dict())
+            return {"ok": True}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def set_pending(self, data: dict | None) -> dict:
+        """Mirror on this side whether there are unsaved edits, and which ones.
+
+        Closing the window runs on the UI thread: asking the interface for its state
+        right there would block it, so the interface pushes its state as it changes
+        and closing only has to read a variable.
+        """
+        self.pending = data or None
+        self.close_asked = False
+        return {"ok": True}
+
+    def keep_open(self) -> dict:
+        """The interface asked and the answer was to go back to the app."""
+        self.close_asked = False
+        return {"ok": True}
+
+    def close_window(self, save_first: bool) -> dict:
+        """Close for real, once the interface has asked what to do with the changes."""
+        if save_first and self.pending:
+            result = self.save_profile(self.pending)
+            if not result.get("ok"):
+                return result      # se queda abierta y la interfaz canta el error
+        self.pending = None
+        if self.window is not None:
+            # Fuera de esta llamada. Cerrar la ventana desde dentro de una llamada del
+            # navegador la deja a medio contestar y Windows la marca como "no responde":
+            # una ventana zombi que ya no se puede ni cerrar. Medido, dos veces.
+            threading.Thread(target=self._destroy_soon, daemon=True).start()
+        return {"ok": True}
+
+    def _destroy_soon(self) -> None:
+        time.sleep(0.2)     # que la respuesta llegue al navegador antes de matarlo
+        try:
+            self.window.destroy()
+        except Exception:   # noqa: BLE001 - si ya no esta, mejor
+            pass
 
     def flash(self, data: dict) -> dict:
         try:
@@ -108,6 +178,9 @@ class Api:
                 if bi < len(old_layer.buttons):
                     binding.action = old_layer.buttons[bi].action
                     binding.color = old_layer.buttons[bi].color
+                    # Also the "works with the app closed" mark: dropping it here left
+                    # the key looking configured while its shortcut went stale.
+                    binding.standalone = old_layer.buttons[bi].standalone
             for ki, knob in enumerate(layer.knobs):
                 if ki < len(old_layer.knobs):
                     for act in ("ccw", "press", "cw"):
@@ -193,13 +266,36 @@ def run(profile_path: str | Path) -> int:
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-http-cache")
 
     api = Api(profile_path)
-    webview.create_window(
+    window = webview.create_window(
         # Nombre para la gente. El paquete, el comando y el repositorio siguen
         # siendo hotkeyconfig en minusculas: eso es un identificador, no un rotulo.
         "HotKeyConfig", url=str(INDEX), js_api=api,
         width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )
+
+    api.window = window
+
+    def on_closing() -> bool:
+        """Do not let unsaved edits leave through the X without asking.
+
+        The question is asked inside the interface (three plain answers, and in the
+        chosen language) instead of with a system dialog, which on Windows only offers
+        OK and Cancel: "Cancel" there could just as well mean "do not save" as "do not
+        close". Asking runs on another thread because this one belongs to the window,
+        and waiting here for the interface to answer would hang the close.
+
+        If the interface never answers, a second click on the X closes anyway: better
+        to lose the edits than to trap somebody inside a window that will not shut.
+        """
+        if not api.pending or api.close_asked:
+            return True
+        api.close_asked = True
+        threading.Thread(target=lambda: window.evaluate_js("askClose()"),
+                         daemon=True).start()
+        return False
+
+    window.events.closing += on_closing
     # private_mode=False so localStorage (language and so on) survives between sessions;
     # with the default private mode it was wiped on close. storage_path points at a
     # writable user folder (not the program directory, which can be read only).

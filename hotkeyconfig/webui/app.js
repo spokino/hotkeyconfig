@@ -113,7 +113,34 @@ const $ = (id) => document.getElementById(id);
 const api = () => window.pywebview.api;
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const svg = (t) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[t] || ICONS.unassigned}</svg>`;
-function markDirty() { state.dirty = true; }
+// Cambios sin guardar. Se marcan en el boton (antes solo vivian en una variable que
+// nadie miraba) y se le pasan a Python, que es quien pregunta al cerrar la ventana.
+let dirtyT;
+function markDirty() {
+  state.dirty = true;
+  $("saveBtn").classList.add("dirty");
+  clearTimeout(dirtyT);
+  // Corto a proposito: en esa ventana Python aun no sabe que hay cambios, y cerrar
+  // justo ahi se los llevaria sin preguntar.
+  dirtyT = setTimeout(() => api().set_pending(state.profile), 120);
+}
+function clearDirty() {
+  state.dirty = false;
+  $("saveBtn").classList.remove("dirty");
+  clearTimeout(dirtyT);
+  api().set_pending(null);
+}
+// La llama Python al pulsar la X con cambios sin guardar: el cierre se queda parado
+// hasta que se responda (y si no se responde, otra X cierra igual).
+function askClose() { $("closeOverlay").classList.add("show"); }
+// Los ajustes de "como es tu teclado" se guardan en el momento: describen el aparato
+// que hay en la mesa, no una edicion a medias. Ademas cambiar la forma ya se guardaba
+// solo (resize_layout) mientras el lado de las perillas no, y esa mezcla enganaba.
+async function saveDevice() {
+  const d = state.profile.device;
+  const r = await api().save_device({ model: d.model, knob_side: d.knob_side, orientation: d.orientation });
+  if (!r.ok) toast(tr("err") + ": " + r.error, "err");
+}
 
 // --- desplegables propios (reemplazan al <select> nativo del SO) ----------
 // El combo nativo de Windows rompe el tema oscuro en WebView2. Envolvemos cada
@@ -510,7 +537,7 @@ function renderModelBar() {
 async function pickModel(id) {
   const d = state.profile.device;
   if (id === d.model) return;
-  if (id === CUSTOM_ID) { d.model = id; markDirty(); renderModelBar(); return; }
+  if (id === CUSTOM_ID) { d.model = id; renderModelBar(); saveDevice(); return; }
   const m = MODELS.filter((x) => x.id === id)[0];
   if (!m) return;
   const igual = m.rows === d.rows && m.columns === d.columns && m.knobs === d.knobs;
@@ -520,7 +547,7 @@ async function pickModel(id) {
     if (state.layer >= state.profile.layers.length) state.layer = 0;
   }
   state.profile.device.model = id;
-  markDirty(); renderAll();
+  renderAll(); saveDevice();
   if (!igual) toast(tr("layout_applied"), "ok");
 }
 
@@ -561,9 +588,9 @@ function wire() {
   $("ledMode").onchange = setLed; $("ledColor").onchange = setLed;
 
   document.querySelector(".layoutbar").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
-  $("lbOrient").onchange = (e) => { state.profile.device.orientation = e.target.value; markDirty(); renderPad(); };
+  $("lbOrient").onchange = (e) => { state.profile.device.orientation = e.target.value; renderPad(); saveDevice(); };
   $("lbModel").onchange = (e) => pickModel(e.target.value);
-  $("lbSide").onchange = (e) => { state.profile.device.knob_side = e.target.value; markDirty(); renderPad(); };
+  $("lbSide").onchange = (e) => { state.profile.device.knob_side = e.target.value; renderPad(); saveDevice(); };
 
   $("addHotkey").onclick = async () => { const combo = await captureKey("cap_shortcut"); if (!combo) return; const h = { combo, action: { type: "unassigned" } }; state.profile.hotkeys.push(h); markDirty(); renderHotkeys(); openEditor(h.action, combo, () => { markDirty(); renderHotkeys(); }); };
   $("hotkeys").addEventListener("click", (e) => { const ed = e.target.closest("[data-edit]"), del = e.target.closest("[data-del]"); if (ed) { const h = state.profile.hotkeys[+ed.dataset.edit]; openEditor(h.action, h.combo, () => { markDirty(); renderHotkeys(); }); } if (del) { state.profile.hotkeys.splice(+del.dataset.del, 1); markDirty(); renderHotkeys(); } });
@@ -590,12 +617,19 @@ function wire() {
   $("capOk").onclick = () => { $("capOverlay").classList.remove("show"); const r = capResolve; capResolve = null; r && r(capValue || ""); };
   $("capCancel").onclick = () => { $("capOverlay").classList.remove("show"); const r = capResolve; capResolve = null; r && r(""); };
   $("confirmYes").onclick = () => { $("confirmOverlay").classList.remove("show"); const r = confirmResolve; confirmResolve = null; r && r(true); };
+  $("closeCancel").onclick = () => { $("closeOverlay").classList.remove("show"); api().keep_open(); };
+  $("closeDiscard").onclick = () => { $("closeOverlay").classList.remove("show"); api().close_window(false); };
+  $("closeSave").onclick = async () => {
+    const r = await api().close_window(true);
+    // Si no se pudo guardar la ventana sigue ahi: hay que decir por que.
+    if (r && !r.ok) { $("closeOverlay").classList.remove("show"); api().keep_open(); toast(tr("err") + ": " + r.error, "err"); }
+  };
   $("confirmNo").onclick = () => { $("confirmOverlay").classList.remove("show"); const r = confirmResolve; confirmResolve = null; r && r(false); };
 
   $("saveBtn").onclick = async () => {
     const r = await api().save_profile(state.profile);
     if (!r.ok) { toast(tr("err") + ": " + r.error, "err"); return; }
-    state.dirty = false;
+    clearDirty();
     // Si alguna tecla marcada como "sin la app" no se pudo entregar a Windows hay
     // que decirlo: callarlo dejaria una tecla que el usuario cree configurada.
     const s = r.standalone || {};

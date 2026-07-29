@@ -121,6 +121,9 @@
   .btn{display:inline-flex; align-items:center; gap:7px; font-size:13px; padding:9px 15px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-family:inherit}
   .btn:hover{background:var(--surface2)}
   .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
+  /* Cambios sin guardar: que lo diga el boton, en vez de dejarlo a la memoria de nadie. */
+  .btn.dirty{border-color:var(--accent); color:var(--accent)}
+  .btn.dirty::after{content:""; width:7px; height:7px; border-radius:50%; background:var(--accent)}
   .btn svg{width:17px; height:17px}
   .spacer{flex:1}
 
@@ -320,6 +323,19 @@
     <div class="actions">
       <button class="btn primary" id="capOk" style="flex:1" data-en="Use">Usar</button>
       <button class="btn" id="capCancel" data-en="Cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: cerrar con cambios sin guardar (lo pide la ventana al pulsar la X) -->
+<div class="overlay" id="closeOverlay">
+  <div class="modal" style="width:430px">
+    <h4 style="display:flex;align-items:center;gap:9px"><span style="width:34px;height:34px;flex:none;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></span><span data-en="Unsaved changes">Cambios sin guardar</span></h4>
+    <div style="font-size:14px;line-height:1.6;color:var(--text);margin-top:4px" data-en="You have changed things and not saved them. What do you want to do?">Has cambiado cosas y no las has guardado. ¿Qué quieres hacer?</div>
+    <div class="actions">
+      <button class="btn" id="closeCancel" style="flex:1" data-en="Go back">Volver</button>
+      <button class="btn" id="closeDiscard" style="flex:1" data-en="Leave without saving">Salir sin guardar</button>
+      <button class="btn primary" id="closeSave" style="flex:1" data-en="Save and leave">Guardar y salir</button>
     </div>
   </div>
 </div>
