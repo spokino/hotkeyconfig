@@ -141,8 +141,9 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 1. **Enchufa el macropad** y pulsa **Flashear teclado**. Eso graba un código único por tecla en la
    memoria del propio teclado. Solo hay que hacerlo una vez y persiste sin la app.
 2. **Haz clic en una tecla o perilla** y elige qué hace. Pulsa **Probar** para verlo al momento.
-3. **Pulsa Iniciar listener** para que tus acciones respondan. Activa el arranque con Windows y
-   olvídate.
+3. **Marca «Siempre activas»** y olvídate: el listener arranca con Windows, así que tus teclas
+   responden con esta ventana cerrada y después de reiniciar. O usa **Iniciar listener** si solo lo
+   quieres para este rato.
 
 > La parte única vive **en la memoria del teclado**, así que persiste. El listener solo hace falta
 > para **ejecutar tus acciones**: si no está en marcha, esas acciones simplemente no se disparan.

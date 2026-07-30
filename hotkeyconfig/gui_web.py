@@ -206,8 +206,20 @@ class Api:
         webbrowser.open(url)
         return {"ok": True}
 
+    def _listener_running(self) -> bool:
+        """Is there a listener out there, ours or not.
+
+        Asking only about our own subprocess used to lie whenever the listener had
+        been started by Windows at login, and the button offered to start a second
+        one, which would run every action twice.
+        """
+        from . import singleton
+        if self.listener is not None and self.listener.poll() is None:
+            return True
+        return singleton.taken(singleton.LISTENER)
+
     def status(self) -> dict:
-        running = self.listener is not None and self.listener.poll() is None
+        running = self._listener_running()
         found = unsupported = None
         try:
             found = hid_flasher.detect()
@@ -225,8 +237,36 @@ class Api:
             "unsupported": unsupported["family"] if unsupported else "",
         }
 
+    # --- que las teclas funcionen siempre ---------------------------------
+    def autostart_status(self) -> dict:
+        """Whether the listener starts with Windows. Without it the macropad is mute.
+
+        This is the one thing that decides if the program keeps its promise: the
+        combos live in the keyboard, but somebody has to be listening for them, and
+        until now that somebody only existed while this window was open.
+        """
+        from . import autostart
+        try:
+            return {"enabled": autostart.is_installed()}
+        except Exception:  # noqa: BLE001
+            return {"enabled": False}
+
+    def set_autostart(self, enabled: bool) -> dict:
+        from . import autostart
+        try:
+            if enabled:
+                autostart.install(str(self.profile_path))
+                # Y que valga ya, no en el proximo inicio de sesion.
+                self.start_listener()
+            else:
+                autostart.uninstall()
+            return {"ok": True, "enabled": bool(enabled),
+                    "listener": self._listener_running()}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
     def start_listener(self) -> dict:
-        if not (self.listener and self.listener.poll() is None):
+        if not self._listener_running():
             self.listener = subprocess.Popen(
                 app_command("run", "--no-tray", "-p", str(self.profile_path)))
         return {"listener": True}
@@ -235,6 +275,11 @@ class Api:
         if self.listener:
             self.listener.terminate()
             self.listener = None
+            return {"listener": False}
+        # Lo arranco Windows al iniciar sesion, no esta ventana: no es nuestro para
+        # matarlo, y quitar el arranque automatico es lo que de verdad se quiere.
+        if self._listener_running():
+            return {"listener": True, "ok": False, "error": "autostart"}
         return {"listener": False}
 
 
@@ -254,10 +299,22 @@ def _free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+WINDOW_TITLE = "HotKeyConfig"   # nombre para la gente; el identificador es hotkeyconfig
+
+
 def run(profile_path: str | Path) -> int:
     import os
 
     import webview
+
+    from . import singleton, winfocus
+
+    # Si ya hay un configurador abierto, se le devuelve al usuario ese y basta. Una
+    # segunda ventana no serviria: se quedaria en blanco esperando la carpeta de
+    # datos de WebView2, que es de una por usuario.
+    if not singleton.claim():
+        winfocus.raise_titled(WINDOW_TITLE, skip_pid=os.getpid())
+        return 0
 
     # Turning off the HTTP cache: since the interface files sit next to the program,
     # WebView2 was serving the previous version of the interface after an update
@@ -267,9 +324,7 @@ def run(profile_path: str | Path) -> int:
 
     api = Api(profile_path)
     window = webview.create_window(
-        # Nombre para la gente. El paquete, el comando y el repositorio siguen
-        # siendo hotkeyconfig en minusculas: eso es un identificador, no un rotulo.
-        "HotKeyConfig", url=str(INDEX), js_api=api,
+        WINDOW_TITLE, url=str(INDEX), js_api=api,
         width=900, height=710, min_size=(780, 600),
         background_color="#16161a",
     )

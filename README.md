@@ -136,7 +136,8 @@ Every knob has three actions: turn left, press, turn right.
 1. **Plug in the macropad** and press **Flash keyboard**. This writes a unique code for every key
    into the keyboard's own memory. It only has to be done once, and it survives without the app.
 2. **Click any key or knob** and pick what it does. Press **Test** to try it right away.
-3. **Press Start listener** so your actions respond. Enable start with Windows and forget about it.
+3. **Tick "Always on"** and forget about it: the listener starts with Windows, so your keys answer
+   with this window closed and after a restart. Or use **Start listener** for just this session.
 
 > The unique part lives **in the keyboard's memory**, so it persists. The listener is only needed to
 > **run your actions**: if it is not running, those actions simply do not fire.

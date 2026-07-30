@@ -118,6 +118,11 @@
   .step .st .t{font-weight:600; margin-bottom:2px}
 
   footer{display:flex; gap:10px; align-items:center; padding:12px 18px; border-top:1px solid var(--border)}
+  /* "Siempre activas": el listener arranca con Windows. Sin esto el macropad solo
+     responde mientras esta ventana abierta, que es justo lo que nadie espera. */
+  footer label.chk{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none; margin-left:2px}
+  footer label.chk.on{color:var(--text)}
+  footer label.chk input[type=checkbox]{width:16px; height:16px; margin:0; accent-color:var(--accent); cursor:pointer}
   .btn{display:inline-flex; align-items:center; gap:7px; font-size:13px; padding:9px 15px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-family:inherit}
   .btn:hover{background:var(--surface2)}
   .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-text)}
@@ -279,6 +284,7 @@
   <footer>
     <button class="btn primary" id="flashBtn" data-en="Flash keyboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>Flashear teclado</button>
     <button class="btn" id="listenBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg><span>Iniciar listener</span></button>
+    <label class="chk" id="autoWrap"><input type="checkbox" id="autoChk"><span data-en="Always on">Siempre activas</span></label>
     <div class="spacer"></div>
     <button class="btn" id="saveBtn" data-en="Save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Guardar</button>
   </footer>

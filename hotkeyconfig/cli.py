@@ -171,8 +171,14 @@ def _ensure_profile(path: str) -> None:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    from . import singleton
     from .runtime import Runtime
 
+    # Un solo listener. Con dos, cada pulsacion se ejecuta dos veces y el fallo
+    # despista muchisimo: una tecla que abre una pagina acaba abriendo tres.
+    if not singleton.claim(singleton.LISTENER):
+        print("[info] there is already a listener running; this one steps aside")
+        return 0
     _ensure_profile(args.profile)
     runtime = Runtime(args.profile)
     if args.no_tray:

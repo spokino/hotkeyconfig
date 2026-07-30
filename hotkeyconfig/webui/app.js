@@ -54,6 +54,11 @@ const T = {
     knob_ccw: "◀ Izquierda", knob_press: "● Pulsar", knob_cw: "▶ Derecha", key_word: "Tecla", knob_word: "Perilla", action_word: "Acción",
     connected: "teclado conectado", disconnected: "teclado no detectado", dev_unsupported: "teclado aún no compatible", listen_start: "Iniciar listener", listen_stop: "Parar listener",
     saved: "Guardado", executed: "Ejecutado", flashing: "Flasheando…", flashed: "Teclado grabado", listener_on: "Listener activo", listener_off: "Listener detenido", layout_applied: "Estructura aplicada",
+    auto_hint: "Las teclas responden aunque cierres esta ventana, y siguen funcionando al reiniciar el ordenador.",
+    auto_on: "Listo: tus teclas funcionan siempre", auto_off: "Las teclas solo funcionarán con el listener activo",
+    auto_off_note: "Quitado del arranque. El listener de ahora sigue activo hasta que reinicies",
+    listener_is_auto: "Lo arranca Windows solo. Desmarca «Siempre activas» para quitarlo",
+    auto_ask: "Tus teclas solo responden mientras el listener está activo, y ahora mismo eso significa tener esta ventana abierta.<br><br>¿Quieres que <b>funcionen siempre</b>, también al reiniciar el ordenador?",
     version_available: "Versión {v} disponible", update_now: "Actualizar", download: "Descargar", updating: "Descargando actualización…",
     confirm_flash: "Se grabarán los combos y la iluminación en la MEMORIA del teclado. ¿Continuar?",
     confirm_layout: "Cambiar la estructura regenera los combos (habrá que reflashear), pero conserva tus acciones. ¿Continuar?",
@@ -90,6 +95,11 @@ const T = {
     knob_ccw: "◀ Left", knob_press: "● Press", knob_cw: "▶ Right", key_word: "Key", knob_word: "Knob", action_word: "Action",
     connected: "keyboard connected", disconnected: "keyboard not found", dev_unsupported: "keyboard not supported yet", listen_start: "Start listener", listen_stop: "Stop listener",
     saved: "Saved", executed: "Done", flashing: "Flashing…", flashed: "Keyboard written", listener_on: "Listener running", listener_off: "Listener stopped", layout_applied: "Structure applied",
+    auto_hint: "Your keys answer even with this window closed, and keep working after a restart.",
+    auto_on: "Done: your keys work all the time", auto_off: "Keys will only work while the listener runs",
+    auto_off_note: "Removed from startup. The one running now stays until you restart",
+    listener_is_auto: "Windows starts it on its own. Untick «Always on» to remove it",
+    auto_ask: "Your keys only answer while the listener is running, and right now that means keeping this window open.<br><br>Do you want them to <b>work all the time</b>, restarts included?",
     version_available: "Version {v} available", update_now: "Update", download: "Download", updating: "Downloading update…",
     confirm_flash: "This writes the combos and lighting into the keyboard's MEMORY. Continue?",
     confirm_layout: "Changing the structure regenerates the combos (you'll need to reflash), but keeps your actions. Continue?",
@@ -276,6 +286,7 @@ function applyLang(lang) {
   if (state.profile) renderAll();
   refreshUpdateBar();
   syncSelects();
+  if ($("autoWrap")) $("autoWrap").title = tr("auto_hint");
 }
 
 // --- editor modal ---------------------------------------------------------
@@ -444,6 +455,38 @@ function renderAll() { renderLayers(); renderLed(); renderLayoutBar(); renderPad
 
 let toastT;
 function toast(msg, kind) { const t = $("toast"); t.textContent = msg; t.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => (t.className = "toast"), 2600); }
+// --- que las teclas funcionen siempre -------------------------------------
+// El listener es quien ejecuta las acciones. Si no arranca con Windows, el macropad
+// solo responde con esta ventana abierta, que no es lo que espera nadie.
+async function refreshAutostart() {
+  let on = false;
+  try { on = !!(await api().autostart_status()).enabled; } catch (e) { on = false; }
+  $("autoChk").checked = on;
+  $("autoWrap").classList.toggle("on", on);
+  $("autoWrap").title = tr("auto_hint");
+  return on;
+}
+async function setAutostart(on) {
+  const r = await api().set_autostart(on);
+  if (!r.ok) { toast(tr("err") + ": " + r.error, "err"); await refreshAutostart(); return false; }
+  if (typeof r.listener === "boolean") { state.listener = r.listener; setListenerBtn(); }
+  await refreshAutostart();
+  // Al desactivarlo, el listener que ya estaba corriendo no se muere solo.
+  if (on) toast(tr("auto_on"), "ok");
+  else toast(r.listener ? tr("auto_off_note") : tr("auto_off"));
+  return true;
+}
+// Se ofrece una sola vez, al guardar teclas por primera vez: es el momento en que
+// deja de ser una pregunta abstracta. Insistir cada vez seria una molestia.
+async function offerAutostart() {
+  if (localStorage.getItem("hkc-auto-asked")) return;
+  const configuradas = state.profile.layers.some((l) =>
+    l.buttons.some((b) => b.action && b.action.type !== "unassigned"));
+  if (!configuradas || await refreshAutostart()) return;
+  localStorage.setItem("hkc-auto-asked", "1");
+  if (await confirmDialog(tr("auto_ask"))) await setAutostart(true);
+}
+
 function setListenerBtn() { const b = $("listenBtn"); b.querySelector("span").textContent = state.listener ? tr("listen_stop") : tr("listen_start"); b.querySelector("svg").innerHTML = state.listener ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>' : '<path d="M8 5v14l11-7z"/>'; }
 async function pollStatus() {
   try {
@@ -636,9 +679,17 @@ function wire() {
     if (s.skipped && s.skipped.length) toast(tr("alone_failed") + ": " + s.skipped.join(", "), "err");
     else toast(tr("saved"), "ok");
     if (state.listener) { await api().stop_listener(); await api().start_listener(); }
+    offerAutostart();
   };
+  $("autoChk").onchange = (e) => setAutostart(e.target.checked);
   $("flashBtn").onclick = async () => { if (!(await confirmDialog(tr("confirm_flash")))) return; toast(tr("flashing")); const r = await api().flash(state.profile); toast(r.ok ? `${tr("flashed")} (${r.n})` : tr("err") + ": " + r.error, r.ok ? "ok" : "err"); };
-  $("listenBtn").onclick = async () => { const r = state.listener ? await api().stop_listener() : await api().start_listener(); state.listener = r.listener; setListenerBtn(); toast(state.listener ? tr("listener_on") : tr("listener_off"), "ok"); };
+  $("listenBtn").onclick = async () => {
+    const r = state.listener ? await api().stop_listener() : await api().start_listener();
+    state.listener = r.listener; setListenerBtn();
+    // No se puede parar el que arranca Windows: hay que quitarlo del arranque.
+    if (r.error === "autostart") { toast(tr("listener_is_auto"), "err"); return; }
+    toast(state.listener ? tr("listener_on") : tr("listener_off"), "ok");
+  };
 }
 function setLed() { const mode = $("ledMode").value, color = $("ledColor").value; state.profile.layers[state.layer].led = (mode === "keep") ? null : { mode, color }; markDirty(); renderLed(); }
 
@@ -647,6 +698,7 @@ async function init() {
   try { BROWSERS = await api().browsers() || []; } catch (e) { BROWSERS = []; }
   try { MODELS = await api().models() || []; } catch (e) { MODELS = []; }
   wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
+  refreshAutostart();
   checkUpdate();
   // El tour no se lanza solo al abrir (molestaba en cada arranque). Esta a un clic
   // en la pestana "Guia" -> "Iniciar tour interactivo", o en el boton "Guia" de la cabecera.

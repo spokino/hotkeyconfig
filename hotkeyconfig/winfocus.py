@@ -163,6 +163,36 @@ def _raise(hwnd: int) -> bool:
     return False
 
 
+def raise_titled(title: str, skip_pid: int | None = None) -> bool:
+    """Bring to the front a window with that exact title, ignoring one process.
+
+    Used to hand the user back the configurator window that is already open when a
+    second one is launched. It goes by title rather than by executable because in
+    development the executable is python.exe, shared with anything else.
+    """
+    if not IS_WINDOWS:
+        return False
+    found: list[int] = []
+
+    def visit(hwnd, _param):
+        if _user32.IsWindowVisible(hwnd):
+            buf = ctypes.create_unicode_buffer(300)
+            _user32.GetWindowTextW(hwnd, buf, len(buf))
+            if buf.value == title:
+                pid = wintypes.DWORD()
+                _user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                if pid.value != skip_pid:
+                    found.append(hwnd)
+        return True
+
+    try:
+        _user32.EnumWindows(_ENUM_PROC(visit), 0)
+    except Exception:  # noqa: BLE001
+        log.debug("could not walk the windows", exc_info=True)
+        return False
+    return bool(found) and _raise(found[0])
+
+
 def raise_app(exe: str, wait_timeout: float = 12.0) -> None:
     """Bring a window of that executable to the front, without blocking.
 
