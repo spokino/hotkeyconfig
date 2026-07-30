@@ -27,7 +27,13 @@ class Api:
         # Copy of the profile while it has edits that are not on disk yet, so that
         # closing the window can offer to save them. See set_pending.
         self.pending: dict | None = None
-        self.window = None          # se rellena en run()
+        # Con guion bajo a proposito, y esto NO es cosmetica: pywebview construye el
+        # puente recorriendo dir() de este objeto y, en cada atributo que sea un
+        # objeto, entra dentro a buscar mas metodos. Guardar la ventana con nombre
+        # publico le hacia recorrer la ventana entera al cargar: el arranque se
+        # volvia lento y el puente acababa saliendo mal, con la interfaz en blanco.
+        # Los nombres que empiezan por guion bajo se los salta.
+        self._window = None         # se rellena en run()
         self.close_asked = False    # ya se pregunto que hacer con los cambios
 
     # --- profile ---------------------------------------------------------
@@ -99,7 +105,7 @@ class Api:
             if not result.get("ok"):
                 return result      # se queda abierta y la interfaz canta el error
         self.pending = None
-        if self.window is not None:
+        if self._window is not None:
             # Fuera de esta llamada. Cerrar la ventana desde dentro de una llamada del
             # navegador la deja a medio contestar y Windows la marca como "no responde":
             # una ventana zombi que ya no se puede ni cerrar. Medido, dos veces.
@@ -109,7 +115,7 @@ class Api:
     def _destroy_soon(self) -> None:
         time.sleep(0.2)     # que la respuesta llegue al navegador antes de matarlo
         try:
-            self.window.destroy()
+            self._window.destroy()
         except Exception:   # noqa: BLE001 - si ya no esta, mejor
             pass
 
@@ -329,7 +335,7 @@ def run(profile_path: str | Path) -> int:
         background_color="#16161a",
     )
 
-    api.window = window
+    api._window = window
 
     def on_closing() -> bool:
         """Do not let unsaved edits leave through the X without asking.
