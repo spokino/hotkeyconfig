@@ -11,7 +11,7 @@
     color-scheme: light dark;
     --bg:#f3f3f6; --surface:#ffffff; --surface2:#eeeef2; --border:#dedee4;
     --text:#1b1b20; --muted:#6b6b74; --accent:#0b4fa4; --accent-text:#fff;
-    --ok:#1a8f3c; --err:#d33b3b; --warn:#b45309;
+    --ok:#1a8f3c; --err:#d33b3b; --warn:#b45309; --scroll:#c2c2cc; --scroll-on:#9b9ba8;
     --c-run:#4a45c8; --c-open:#0b6bd8; --c-text:#0e8f84; --c-media:#c07514;
     --c-native:#c07514; --c-hotkey:#c43a72; --c-window:#556070; --c-sequence:#6d34d6;
   }
@@ -19,24 +19,56 @@
     :root{
       --bg:#16161a; --surface:#1e1e25; --surface2:#262630; --border:#33333d;
       --text:#e9e9ee; --muted:#9a9aa6; --accent:#4d90fe; --accent-text:#0a1a30;
-      --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
+      --ok:#22c55e; --err:#ef4444; --warn:#f59e0b; --scroll:#4b4b58; --scroll-on:#6e6e80;
       --c-run:#8b7cf6; --c-open:#5aa2ff; --c-text:#14b8a6; --c-media:#f59e0b;
       --c-native:#f59e0b; --c-hotkey:#ec4899; --c-window:#8794a5; --c-sequence:#a855f7;
     }
   }
   *{box-sizing:border-box; margin:0; padding:0}
+  /* Barras de desplazamiento. La de Windows es ancha, gris y con flechas: se come
+     el borde redondeado de los paneles y no se entera del tema claro/oscuro. Esta
+     va con los colores de la casa y se marca al pasar por encima. El borde
+     transparente con background-clip deja aire a los lados sin estrechar la zona
+     donde se puede agarrar. */
+  *::-webkit-scrollbar{width:11px; height:11px}
+  *::-webkit-scrollbar-track{background:transparent}
+  *::-webkit-scrollbar-thumb{background:var(--scroll); background-clip:content-box; border:3px solid transparent; border-radius:99px}
+  *::-webkit-scrollbar-thumb:hover{background:var(--scroll-on); background-clip:content-box}
+  *::-webkit-scrollbar-thumb:active{background:var(--accent); background-clip:content-box}
+  *::-webkit-scrollbar-button{display:none; width:0; height:0}
+  *::-webkit-scrollbar-corner{background:transparent}
   body{font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden}
   .app{display:flex; flex-direction:column; height:100vh}
-  header{display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-bottom:1px solid var(--border)}
-  .brand{display:flex; align-items:center; gap:10px; font-size:16px; font-weight:600}
-  .brand .logo{width:26px; height:26px; color:var(--accent)}
-  .htools{display:flex; align-items:center; gap:10px}
-  .pill{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:5px 11px; border-radius:999px; background:var(--surface2); color:var(--muted)}
-  .pill.on{color:var(--ok)} .pill .dot{width:8px; height:8px; border-radius:50%; background:currentColor}
+  /* Cabecera al ras: solo el nombre y los tres controles, a la misma altura. */
+  header{display:flex; align-items:center; justify-content:space-between; padding:7px 16px; border-bottom:1px solid var(--border)}
+  .brand{display:flex; align-items:center; gap:13px; user-select:none}
+  /* El text-indent compensa el hueco que letter-spacing deja detras de la ultima
+     letra; sin el, el separador queda descentrado. */
+  .brand .mark{font-size:16px; font-weight:700; letter-spacing:.34em; text-indent:.34em; color:var(--text)}
+  /* Una letra de cada color, pero con los de la casa: el naranja de multimedia, el
+     verde de "conectado" y el azul de acento. Colores sueltos cantarian, y estos
+     ademas cambian solos en el tema claro. */
+  .brand .mark .h{color:var(--c-media)}
+  .brand .mark .k{color:var(--ok)}
+  .brand .mark .c{color:var(--accent)}
+  .brand .sep{width:1px; height:17px; background:var(--border)}
+  .brand .full{font-size:13px; font-weight:400; letter-spacing:.02em; color:var(--muted)}
+  .htools{display:flex; align-items:center; gap:8px}
+  /* El estado del teclado con la misma caja que los botones de al lado. Antes era
+     una pastilla redonda con el texto entero en verde, que no se parecia a nada
+     mas de la ventana y cantaba mas que el propio boton de Guia. Ahora el color
+     lo lleva solo el punto, que es lo que de verdad dice si esta conectado. */
+  .pill{display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 11px; font-size:12.5px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--muted)}
+  .pill .dot{width:7px; height:7px; border-radius:50%; background:var(--muted)}
+  .pill.on{color:var(--text)}
+  .pill.on .dot{background:var(--ok); box-shadow:0 0 7px var(--ok)}
   .langsel{height:34px; border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:9px; padding:0 8px; font-size:13px; cursor:pointer}
   .langbtn{display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 13px; border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:9px; font-size:13px; font-family:inherit; cursor:pointer; transition:border-color .12s, color .12s}
   .langbtn:hover{border-color:var(--accent); color:var(--accent)}
   .langbtn svg{width:15px; height:15px}
+  /* Los de la cabecera, un punto mas bajos que los del pie, para no robar altura
+     a lo que de verdad se usa. */
+  .htools .btn, .htools .langbtn{height:30px; padding:0 11px; font-size:12.5px; border-radius:8px}
   .nav{display:flex; gap:6px; padding:10px 18px 0; border-bottom:1px solid var(--border)}
   .nav .tab{font-size:14px; padding:9px 16px; border-radius:9px 9px 0 0; color:var(--muted); cursor:pointer; border:1px solid transparent; border-bottom:none; display:flex; align-items:center; gap:7px}
   .nav .tab.active{background:var(--surface); color:var(--text); border-color:var(--border); font-weight:600}
@@ -223,9 +255,13 @@
 <body>
 <div class="app">
   <header>
+    <!-- Iniciales y nombre. Va con la tipografia de la interfaz, no dibujado: unas
+         letras hechas a mano eran lo unico de la ventana que no era Segoe UI, y se
+         notaba. El aire entre letras es lo que le da longitud, sin deformar nada. -->
     <div class="brand">
-      <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M7 12h10M6 16h12"/></svg>
-      HotKeyConfig
+      <span class="mark"><span class="h">H</span><span class="k">K</span><span class="c">C</span></span>
+      <span class="sep"></span>
+      <span class="full">HotKeyConfig</span>
     </div>
     <div class="htools">
       <span class="pill" id="devPill"><span class="dot"></span><span id="devTxt">…</span></span>

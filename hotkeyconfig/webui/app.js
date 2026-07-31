@@ -14,7 +14,7 @@ let MODELS = [];     // catalogo de teclados, lo da el backend al arrancar
 const CUSTOM_ID = "custom";
 const TYPE_FIELDS = {
   run: [{ k: "cmd", ph: "py C:/scripts/deploy.py", browse: "file" }, { k: "cwd", ph: "", browse: "folder" }],
-  open: [{ k: "target", ph: "https://github.com/Mun1to", apps: true, browse: "file" },
+  open: [{ k: "target", ph: () => tr("target_ph"), apps: true, browse: "file" },
          { k: "browser", list: () => [{ v: "", l: tr("browser_default") }].concat(BROWSERS.map((b) => ({ v: b.name, l: b.name }))) }],
   text: [{ k: "text", ph: "" }],
   media: [{ k: "key", opts: MEDIA_KEYS }], native: [{ k: "key", opts: MEDIA_KEYS }],
@@ -44,9 +44,10 @@ const T = {
     fld_cmd: "Comando", fld_cwd: "Carpeta (opcional)", fld_target: "Destino", fld_text: "Texto", fld_key: "Tecla", fld_send: "Atajo", fld_do: "Operación",
     fld_browser: "Navegador (solo para enlaces)", browser_default: "El del sistema",
     browse: "Examinar", browse_file: "Elegir un archivo", browse_folder: "Elegir una carpeta",
-    app_hint: "Escribe el nombre de un programa y elígelo de la lista, o pulsa la carpeta para buscarlo.",
+    app_hint: "Pulsa el botón de la lista para ver tus programas instalados, o escribe el nombre. Si no está, la carpeta abre el buscador de archivos.",
     app_none: "Ningún programa instalado se llama así. Puedes escribir la ruta o pulsar la carpeta.",
-    app_pick: "Programa instalado",
+    app_pick: "Ver programas instalados",
+    target_ph: "Elige un programa, o escribe una carpeta o una dirección web",
     taken_sys: "Windows ya usa esta combinación para {q}. Si la asignas, pasarán las dos cosas.",
     taken_other: "Otro programa ya usa esta combinación. Puede que tu tecla no llegue a funcionar.",
     clash_one: "1 tecla usa una combinación que ya tiene cogida otro programa, así que no hace nada al pulsarla.",
@@ -109,9 +110,10 @@ const T = {
     fld_cmd: "Command", fld_cwd: "Folder (optional)", fld_target: "Target", fld_text: "Text", fld_key: "Key", fld_send: "Shortcut", fld_do: "Operation",
     fld_browser: "Browser (links only)", browser_default: "System default",
     browse: "Browse", browse_file: "Pick a file", browse_folder: "Pick a folder",
-    app_hint: "Type the name of a program and pick it from the list, or press the folder to find it.",
+    app_hint: "Press the list button to see your installed programs, or type a name. If it is not there, the folder opens the file picker.",
     app_none: "No installed program by that name. You can type the path or press the folder.",
-    app_pick: "Installed program",
+    app_pick: "See installed programs",
+    target_ph: "Pick a program, or type a folder or a web address",
     taken_sys: "Windows already uses this combination for {q}. Assign it and both things will happen.",
     taken_other: "Another program already holds this combination. Your key may never get to run.",
     clash_one: "1 key uses a combination another program already holds, so it does nothing when pressed.",
@@ -375,6 +377,7 @@ function openEditor(binding, title, onSave) {
   if (edState.binding) $("edColor")._enh && $("edColor")._enh.sync();
 }
 const FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2z"/></svg>';
+const CARET_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><path d="M14 17.5h7"/><path d="M17.5 14v7"/></svg>';
 
 function renderEdFields() {
   const t = edState.work.type;
@@ -395,14 +398,21 @@ function renderEdFields() {
     // instalados y boton para elegir el archivo: escribir la ruta de un .exe a
     // mano era la parte mas ingrata de configurar una tecla.
     const shown = isApp(val) ? appName(val) : val;
+    const ph = typeof f.ph === "function" ? f.ph() : (f.ph || "");
     const input = `<input data-f="${f.k}" ${f.apps ? 'data-apps="1" autocomplete="off"' : ""}` +
-      ` class="${isApp(val) ? "hasicon" : ""}" value="${esc(shown)}" placeholder="${esc(f.ph || "")}">`;
+      ` class="${isApp(val) ? "hasicon" : ""}" value="${esc(shown)}" placeholder="${esc(ph)}">`;
     if (!f.browse && !f.apps) return `<label>${lbl}</label>${input}`;
+    // La flecha abre la lista de lo instalado sin escribir nada. Sin ella, quien no
+    // sabe donde vive el .exe se va al boton de carpeta y acaba buscando por todo el
+    // disco, que es justo lo que esto venia a evitar.
+    const drop = f.apps
+      ? `<button type="button" class="btn browse" data-drop="${f.k}" title="${esc(tr("app_pick"))}">${CARET_SVG}</button>`
+      : "";
     const browse = f.browse
       ? `<button type="button" class="btn browse" data-browse="${f.browse}" data-for="${f.k}" title="${esc(tr("browse_" + f.browse))}">${FOLDER_SVG}</button>`
       : "";
     return `<label>${lbl}</label><div class="pickrow"><div class="fieldwrap">` +
-      `<img class="ico" data-ico="${f.k}" alt="" style="display:none">${input}</div>${browse}</div>` +
+      `<img class="ico" data-ico="${f.k}" alt="" style="display:none">${input}</div>${drop}${browse}</div>` +
       (f.apps ? `<div class="appsug" data-sug="${f.k}"></div><div class="note">${tr("app_hint")}</div>` : "");
   }).join("");
 
@@ -424,6 +434,19 @@ function renderEdFields() {
   });
   $("edFields").querySelectorAll("[data-browse]").forEach((btn) => {
     btn.addEventListener("click", () => browseInto(btn.dataset.for, btn.dataset.browse));
+  });
+  $("edFields").querySelectorAll("[data-drop]").forEach((btn) => {
+    // mousedown y no click: al pulsar, el campo pierde el foco y su blur cerraria
+    // la lista justo despues de abrirla.
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const key = btn.dataset.drop;
+      const box = $("edFields").querySelector(`[data-sug="${key}"]`);
+      const input = $("edFields").querySelector(`input[data-f="${key}"]`);
+      if (box && box.innerHTML) { box.innerHTML = ""; return; }
+      if (input) input.focus();
+      showSuggestions(key, "");
+    });
   });
   fields.forEach((f) => { if (f.apps) paintFieldIcon(f.k, edState.work.params[f.k]); });
   enhanceIn($("edFields"));
@@ -499,8 +522,10 @@ function showSuggestions(key, query) {
   if (!box) return;
   const value = String(query || "").trim();
   // Una ruta o una direccion ya dicen lo que son: ahi no hay nada que sugerir.
-  if (!value || /^([a-z]:[\\/]|\\\\|https?:|\.)/i.test(value)) { box.innerHTML = ""; return; }
-  const found = searchApps(value, 8);
+  if (/^([a-z]:[\\/]|\\\\|https?:|\.)/i.test(value)) { box.innerHTML = ""; return; }
+  // Con el campo vacio se enseña la lista entera. Antes no salia nada hasta
+  // escribir, asi que quien no sabia el nombre exacto no llegaba a verla.
+  const found = searchApps(value, value ? 10 : 200);
   if (!found.length) {
     box.innerHTML = `<div class="row" style="cursor:default;color:var(--muted)">${tr("app_none")}</div>`;
     return;
@@ -514,7 +539,24 @@ function showSuggestions(key, query) {
   box.querySelectorAll("[data-pick]").forEach((row) => {
     row.addEventListener("mousedown", (e) => { e.preventDefault(); chooseApp(key, row.dataset.pick); });
   });
-  loadIconsFor(found.map((a) => a.id), box);
+  let scrollT = null;
+  box.onscroll = () => { clearTimeout(scrollT); scrollT = setTimeout(() => loadVisibleIcons(box), 90); };
+  loadVisibleIcons(box);
+}
+
+// Con la lista entera abierta hay ciento y pico programas: pedir todos los iconos
+// tardaria segundos. Se piden los de las filas que se ven, y el resto al bajar.
+function loadVisibleIcons(box) {
+  if (!box || !box.isConnected) return;
+  // Posiciones en pantalla, no offsetTop: ese se mide contra el ancestro
+  // posicionado, que aqui no es la caja, y salia que no se veia ninguna fila.
+  const caja = box.getBoundingClientRect();
+  const visibles = [];
+  box.querySelectorAll("[data-ph]").forEach((ph) => {
+    const fila = ph.getBoundingClientRect();
+    if (fila.bottom > caja.top - 60 && fila.top < caja.bottom + 60) visibles.push(ph.dataset.ph);
+  });
+  if (visibles.length) loadIconsFor(visibles, box);
 }
 
 // Los iconos se piden solo para lo que hay en pantalla: pedir los 140 de golpe

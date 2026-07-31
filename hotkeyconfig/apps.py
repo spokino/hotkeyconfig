@@ -358,7 +358,11 @@ def _bgra_to_png(raw: bytes, width: int, height: int) -> str:
 
     from PIL import Image
 
-    image = Image.frombuffer("RGBA", (width, height), raw, "raw", "BGRA", 0, 1)
+    # Orientacion -1: el shell entrega el mapa de bits de abajo arriba, asi que
+    # leerlo del derecho sacaba los iconos boca abajo. Cuesta verlo porque medio
+    # catalogo son circulos (Chrome, Spotify, Steam), pero Discord, GIMP, Aseprite
+    # o Inkscape salian del reves. Comparado contra el icono del propio .exe.
+    image = Image.frombuffer("RGBA", (width, height), raw, "raw", "BGRA", 0, -1)
     if _looks_blank(image):
         return ""
     out = BytesIO()
