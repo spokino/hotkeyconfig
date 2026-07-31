@@ -11,7 +11,7 @@
     color-scheme: light dark;
     --bg:#f3f3f6; --surface:#ffffff; --surface2:#eeeef2; --border:#dedee4;
     --text:#1b1b20; --muted:#6b6b74; --accent:#0b4fa4; --accent-text:#fff;
-    --ok:#1a8f3c; --err:#d33b3b;
+    --ok:#1a8f3c; --err:#d33b3b; --warn:#b45309;
     --c-run:#4a45c8; --c-open:#0b6bd8; --c-text:#0e8f84; --c-media:#c07514;
     --c-native:#c07514; --c-hotkey:#c43a72; --c-window:#556070; --c-sequence:#6d34d6;
   }
@@ -19,7 +19,7 @@
     :root{
       --bg:#16161a; --surface:#1e1e25; --surface2:#262630; --border:#33333d;
       --text:#e9e9ee; --muted:#9a9aa6; --accent:#4d90fe; --accent-text:#0a1a30;
-      --ok:#22c55e; --err:#ef4444;
+      --ok:#22c55e; --err:#ef4444; --warn:#f59e0b;
       --c-run:#8b7cf6; --c-open:#5aa2ff; --c-text:#14b8a6; --c-media:#f59e0b;
       --c-native:#f59e0b; --c-hotkey:#ec4899; --c-window:#8794a5; --c-sequence:#a855f7;
     }
@@ -92,7 +92,7 @@
   .chip .cv{font-size:11px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:right}
   .chip .cv:empty::after{content:"—"; color:var(--muted)}
   .grid{display:grid; gap:8px; justify-content:center}
-  .key{min-height:74px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:6px; overflow:hidden; transition:transform .05s}
+  .key{position:relative; min-height:74px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:6px; overflow:hidden; transition:transform .05s}
   .key:hover{transform:translateY(-1px)} .key:active{transform:scale(.97)}
   .key.empty{border-style:dashed; color:var(--muted)}
   .key .kn{font-size:10px; color:var(--muted)} .key .ic svg{width:22px; height:22px}
@@ -150,6 +150,33 @@
   .modal label.chk{display:flex; align-items:center; gap:9px; margin:0; font-size:13px; color:var(--text); cursor:pointer}
   .modal label.chk input[type=checkbox]{width:17px; height:17px; flex:none; padding:0; margin:0; accent-color:var(--accent); cursor:pointer}
   .capbox{font-family:ui-monospace,monospace; font-size:16px; text-align:center; padding:16px; border:1px dashed var(--accent); border-radius:10px; color:var(--text); margin:6px 0}
+
+  /* Campo de destino: escribir a mano, buscar entre lo instalado o examinar. */
+  .pickrow{display:flex; gap:7px; align-items:center}
+  .pickrow .fieldwrap{position:relative; flex:1; display:flex; align-items:center; min-width:0}
+  .pickrow .fieldwrap .ico{position:absolute; left:9px; width:18px; height:18px; pointer-events:none; border-radius:4px}
+  .pickrow .fieldwrap input.hasicon{padding-left:34px}
+  .pickrow .browse{flex:none; padding:9px 11px; line-height:1}
+  .pickrow .browse svg{width:16px; height:16px}
+  .appsug{margin-top:6px; border:1px solid var(--border); border-radius:10px; background:var(--surface2); max-height:212px; overflow:auto}
+  .appsug:empty{display:none}
+  .appsug .row{display:flex; align-items:center; gap:9px; padding:7px 10px; cursor:pointer; font-size:13px}
+  .appsug .row:hover,.appsug .row.sel{background:var(--surface)}
+  .appsug .row .ico{width:20px; height:20px; flex:none; border-radius:4px}
+  .appsug .row .ph{width:20px; height:20px; flex:none; border-radius:5px; background:var(--border); color:var(--muted); font-size:11px; display:flex; align-items:center; justify-content:center}
+  .appsug .row span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+
+  /* Avisos de combinación ocupada por Windows o por otro programa. */
+  .warnbar{display:none; align-items:center; gap:10px; font-size:12.5px; background:var(--surface2); border:1px solid var(--warn); color:var(--text); border-radius:10px; padding:9px 12px; margin-bottom:12px}
+  .warnbar.show{display:flex}
+  .warnbar .wico{flex:none; width:17px; height:17px; color:var(--warn)}
+  .warnbar .wtext{flex:1}
+  .warnbar button{flex:none; font-size:12.5px; padding:6px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-family:inherit}
+  .warnbar button:hover{border-color:var(--warn)}
+  .modal .note.taken{color:var(--warn)}
+  .key.clash{border-color:var(--warn)}
+  .chip.clash{border-color:var(--warn)}
+  .key .clashdot{position:absolute; top:5px; left:6px; width:7px; height:7px; border-radius:50%; background:var(--warn)}
 
   /* Desplegables propios (reemplazan al combo nativo del SO, que rompe el tema) */
   .csel{position:relative; width:100%}
@@ -252,6 +279,13 @@
         <span class="usbtag" id="lbUsb"></span>
       </div>
       <div class="modelnote" id="lbNote"></div>
+      <!-- Alguna tecla lleva una combinación que Windows u otro programa ya usa:
+           esa tecla no hace nada al pulsarla y no hay forma de saberlo mirándola. -->
+      <div class="warnbar" id="clashBar">
+        <svg class="wico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <span class="wtext" id="clashText"></span>
+        <button id="clashFix" data-en="Move them">Cambiarlas</button>
+      </div>
       <div class="pad" id="pad">
         <div class="padinner">
           <div class="grid" id="grid"></div>
@@ -326,6 +360,9 @@
   <div class="modal">
     <h4 id="capTitle">Pulsa la combinación</h4>
     <div class="capbox" id="capBox">…</div>
+    <!-- Grabar un atajo que ya usa el sistema (Ctrl+Shift+Win+B reinicia el driver
+         de la gráfica) sale caro y no se ve venir. Se avisa antes de usarlo. -->
+    <div class="note taken" id="capWarn"></div>
     <div class="actions">
       <button class="btn primary" id="capOk" style="flex:1" data-en="Use">Usar</button>
       <button class="btn" id="capCancel" data-en="Cancel">Cancelar</button>

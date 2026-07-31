@@ -140,7 +140,9 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 
 1. **Enchufa el macropad** y pulsa **Flashear teclado**. Eso graba un código único por tecla en la
    memoria del propio teclado. Solo hay que hacerlo una vez y persiste sin la app.
-2. **Haz clic en una tecla o perilla** y elige qué hace. Pulsa **Probar** para verlo al momento.
+2. **Haz clic en una tecla o perilla** y elige qué hace. Para abrir un programa, escribe su nombre y
+   **elígelo de la lista de lo que tienes instalado** (sale con su icono), o pulsa la carpeta para
+   buscar el archivo. Pulsa **Probar** para verlo al momento.
 3. **Marca «Siempre activas»** y olvídate: el listener arranca con Windows, así que tus teclas
    responden con esta ventana cerrada y después de reiniciar. O usa **Iniciar listener** si solo lo
    quieres para este rato.
@@ -161,6 +163,20 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 | `sequence` | Varias acciones en orden | `steps` |
 | `native` | Se graba en el hardware (volumen, etc.) | `key` |
 | `unassigned` | No hace nada | (ninguno) |
+
+En `open`, el `target` puede ser una ruta, una URL o `app:<id>`, que es lo que guarda la interfaz al
+elegir un programa de la lista. Ese identificador se lo da Windows, así que funciona igual con
+programas de la Microsoft Store, que no tienen ninguna ruta a la que apuntar.
+
+### Combinaciones que ya usa otro programa
+
+Los combos que se graban en el teclado (`Ctrl+Alt+F13` y parecidos) están pensados para que ningún
+otro programa los use, pero eso no lo garantiza nada: en el ordenador donde se escribió esto, 7 de
+los 54 estaban cogidos. Una tecla así no hace nada al pulsarla y no hay forma de saberlo mirándola.
+
+La app se lo pregunta a Windows y avisa en la pantalla del macropad, con un botón para darles
+combinaciones libres (solo se mueven las teclas afectadas, y hay que reflashear). Lo mismo al grabar
+un atajo del teclado normal: si ya es de Windows, te dice para qué lo usa antes de que lo asignes.
 
 ### Que una tecla funcione con la app cerrada
 

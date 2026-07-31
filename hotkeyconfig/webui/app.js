@@ -13,8 +13,8 @@ let BROWSERS = [];   // los que hay instalados, los da el sistema al arrancar
 let MODELS = [];     // catalogo de teclados, lo da el backend al arrancar
 const CUSTOM_ID = "custom";
 const TYPE_FIELDS = {
-  run: [{ k: "cmd", ph: "py C:/scripts/deploy.py" }, { k: "cwd", ph: "" }],
-  open: [{ k: "target", ph: "https://github.com/Mun1to" },
+  run: [{ k: "cmd", ph: "py C:/scripts/deploy.py", browse: "file" }, { k: "cwd", ph: "", browse: "folder" }],
+  open: [{ k: "target", ph: "https://github.com/Mun1to", apps: true, browse: "file" },
          { k: "browser", list: () => [{ v: "", l: tr("browser_default") }].concat(BROWSERS.map((b) => ({ v: b.name, l: b.name }))) }],
   text: [{ k: "text", ph: "" }],
   media: [{ k: "key", opts: MEDIA_KEYS }], native: [{ k: "key", opts: MEDIA_KEYS }],
@@ -43,6 +43,30 @@ const T = {
     hint_sequence: "Varias acciones en orden (se edita en profile.yaml).",
     fld_cmd: "Comando", fld_cwd: "Carpeta (opcional)", fld_target: "Destino", fld_text: "Texto", fld_key: "Tecla", fld_send: "Atajo", fld_do: "Operación",
     fld_browser: "Navegador (solo para enlaces)", browser_default: "El del sistema",
+    browse: "Examinar", browse_file: "Elegir un archivo", browse_folder: "Elegir una carpeta",
+    app_hint: "Escribe el nombre de un programa y elígelo de la lista, o pulsa la carpeta para buscarlo.",
+    app_none: "Ningún programa instalado se llama así. Puedes escribir la ruta o pulsar la carpeta.",
+    app_pick: "Programa instalado",
+    taken_sys: "Windows ya usa esta combinación para {q}. Si la asignas, pasarán las dos cosas.",
+    taken_other: "Otro programa ya usa esta combinación. Puede que tu tecla no llegue a funcionar.",
+    clash_one: "1 tecla usa una combinación que ya tiene cogida otro programa, así que no hace nada al pulsarla.",
+    clash_many: "{n} teclas usan combinaciones que ya tiene cogidas otro programa, así que no hacen nada al pulsarlas.",
+    clash_confirm: "Se les darán combinaciones libres. Tus acciones se conservan, pero <b>hay que flashear el teclado otra vez</b> para que el cambio llegue a su memoria. ¿Sigo?",
+    clash_fixed: "Cambiadas. Ahora pulsa «Flashear teclado»",
+    sys_reset_gpu: "reiniciar la tarjeta gráfica",
+    sys_notification_area: "el área de notificaciones", sys_show_desktop: "mostrar el escritorio",
+    sys_file_explorer: "abrir el explorador", sys_settings: "abrir la configuración",
+    sys_lock: "bloquear el ordenador", sys_run: "la ventana Ejecutar", sys_search: "la búsqueda",
+    sys_quick_settings: "la configuración rápida", sys_notifications: "las notificaciones",
+    sys_clipboard: "el historial del portapapeles", sys_game_bar: "la barra de juego",
+    sys_dictation: "el dictado por voz", sys_power_menu: "el menú de inicio secundario",
+    sys_minimize_all: "minimizar todo", sys_project: "proyectar la pantalla",
+    sys_task_view: "la vista de tareas", sys_screenshot: "hacer una captura",
+    sys_snip: "el recorte de pantalla", sys_emoji: "el panel de emojis",
+    sys_peek_desktop: "echar un vistazo al escritorio", sys_snap_window: "acoplar la ventana",
+    sys_task_manager: "el administrador de tareas", sys_security_screen: "la pantalla de seguridad",
+    sys_switch_window: "cambiar de ventana", sys_close_window: "cerrar la ventana",
+    sys_cycle_windows: "cambiar de ventana", sys_start_menu: "el menú Inicio",
     u_keys: "teclas", u_and: "y", u_knob: "perilla", u_knobs: "perillas",
     model_custom: "Otro (a medida)", model_pending: "todavía no compatible",
     alone_failed: "Guardado, pero esto no se puede abrir sin la app",
@@ -84,6 +108,30 @@ const T = {
     hint_sequence: "Several actions in order (edit in profile.yaml).",
     fld_cmd: "Command", fld_cwd: "Folder (optional)", fld_target: "Target", fld_text: "Text", fld_key: "Key", fld_send: "Shortcut", fld_do: "Operation",
     fld_browser: "Browser (links only)", browser_default: "System default",
+    browse: "Browse", browse_file: "Pick a file", browse_folder: "Pick a folder",
+    app_hint: "Type the name of a program and pick it from the list, or press the folder to find it.",
+    app_none: "No installed program by that name. You can type the path or press the folder.",
+    app_pick: "Installed program",
+    taken_sys: "Windows already uses this combination for {q}. Assign it and both things will happen.",
+    taken_other: "Another program already holds this combination. Your key may never get to run.",
+    clash_one: "1 key uses a combination another program already holds, so it does nothing when pressed.",
+    clash_many: "{n} keys use combinations another program already holds, so they do nothing when pressed.",
+    clash_confirm: "They will be given free combinations. Your actions are kept, but <b>the keyboard has to be flashed again</b> for the change to reach its memory. Go ahead?",
+    clash_fixed: "Moved. Now press «Flash keyboard»",
+    sys_reset_gpu: "restarting the graphics card",
+    sys_notification_area: "the notification area", sys_show_desktop: "showing the desktop",
+    sys_file_explorer: "opening File Explorer", sys_settings: "opening Settings",
+    sys_lock: "locking the computer", sys_run: "the Run box", sys_search: "search",
+    sys_quick_settings: "quick settings", sys_notifications: "notifications",
+    sys_clipboard: "clipboard history", sys_game_bar: "the Game Bar",
+    sys_dictation: "voice dictation", sys_power_menu: "the power user menu",
+    sys_minimize_all: "minimising everything", sys_project: "projecting the screen",
+    sys_task_view: "task view", sys_screenshot: "taking a screenshot",
+    sys_snip: "the snipping tool", sys_emoji: "the emoji panel",
+    sys_peek_desktop: "peeking at the desktop", sys_snap_window: "snapping the window",
+    sys_task_manager: "Task Manager", sys_security_screen: "the security screen",
+    sys_switch_window: "switching windows", sys_close_window: "closing the window",
+    sys_cycle_windows: "cycling windows", sys_start_menu: "the Start menu",
     u_keys: "keys", u_and: "and", u_knob: "knob", u_knobs: "knobs",
     model_custom: "Other (custom)", model_pending: "not supported yet",
     alone_failed: "Saved, but this cannot be opened without the app",
@@ -254,7 +302,9 @@ function summary(a) {
   switch (a.type) {
     case "unassigned": return "\u2014";
     case "run": return p.cmd || (p.args || []).join(" ") || "script";
-    case "open": return p.target || tr("type_open");
+    // Un programa elegido de la lista se guarda por su identificador, que no dice
+    // nada a nadie: en la tecla se enseña su nombre.
+    case "open": return isApp(p.target) ? appName(p.target) : (p.target || tr("type_open"));
     case "text": return p.text || tr("type_text");
     case "media": case "native": return p.key || "media";
     case "hotkey": return p.send || tr("type_hotkey");
@@ -324,6 +374,8 @@ function openEditor(binding, title, onSave) {
   enhanceIn($("edColorRow"));
   if (edState.binding) $("edColor")._enh && $("edColor")._enh.sync();
 }
+const FOLDER_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2z"/></svg>';
+
 function renderEdFields() {
   const t = edState.work.type;
   $("edHint").textContent = tr("hint_" + t);
@@ -339,12 +391,163 @@ function renderEdFields() {
       return `<label>${lbl}</label><select data-f="${f.k}">${items.map((o) => `<option value="${esc(o.v)}" ${o.v === val ? "selected" : ""}>${esc(o.l)}</option>`).join("")}</select>`;
     }
     if (f.opts) return `<label>${lbl}</label><select data-f="${f.k}">${f.opts.map((o) => `<option value="${o}" ${o === val ? "selected" : ""}>${o}</option>`).join("")}</select>`;
-    return `<label>${lbl}</label><input data-f="${f.k}" value="${esc(val)}" placeholder="${esc(f.ph || "")}">`;
+    // Campo de texto. El destino de "abrir" lleva ademas buscador de programas
+    // instalados y boton para elegir el archivo: escribir la ruta de un .exe a
+    // mano era la parte mas ingrata de configurar una tecla.
+    const shown = isApp(val) ? appName(val) : val;
+    const input = `<input data-f="${f.k}" ${f.apps ? 'data-apps="1" autocomplete="off"' : ""}` +
+      ` class="${isApp(val) ? "hasicon" : ""}" value="${esc(shown)}" placeholder="${esc(f.ph || "")}">`;
+    if (!f.browse && !f.apps) return `<label>${lbl}</label>${input}`;
+    const browse = f.browse
+      ? `<button type="button" class="btn browse" data-browse="${f.browse}" data-for="${f.k}" title="${esc(tr("browse_" + f.browse))}">${FOLDER_SVG}</button>`
+      : "";
+    return `<label>${lbl}</label><div class="pickrow"><div class="fieldwrap">` +
+      `<img class="ico" data-ico="${f.k}" alt="" style="display:none">${input}</div>${browse}</div>` +
+      (f.apps ? `<div class="appsug" data-sug="${f.k}"></div><div class="note">${tr("app_hint")}</div>` : "");
   }).join("");
-  $("edFields").querySelectorAll("[data-f]").forEach((el) => el.addEventListener("input", () => {
-    if (el.value === "") delete edState.work.params[el.dataset.f]; else edState.work.params[el.dataset.f] = el.value;
-  }));
+
+  $("edFields").querySelectorAll("input[data-f]").forEach((el) => {
+    const key = el.dataset.f;
+    el.addEventListener("input", () => {
+      // Al escribir se deja de apuntar a un programa concreto: lo que vale es el texto.
+      setParam(key, el.value);
+      el.classList.remove("hasicon");
+      const ico = $("edFields").querySelector(`[data-ico="${key}"]`);
+      if (ico) ico.style.display = "none";
+      if (el.dataset.apps) showSuggestions(key, el.value);
+    });
+    if (el.dataset.apps) {
+      el.addEventListener("focus", () => showSuggestions(key, el.value));
+      // Con un blur inmediato el clic sobre una sugerencia no llega a ocurrir.
+      el.addEventListener("blur", () => setTimeout(() => clearSuggestions(key), 160));
+    }
+  });
+  $("edFields").querySelectorAll("[data-browse]").forEach((btn) => {
+    btn.addEventListener("click", () => browseInto(btn.dataset.for, btn.dataset.browse));
+  });
+  fields.forEach((f) => { if (f.apps) paintFieldIcon(f.k, edState.work.params[f.k]); });
   enhanceIn($("edFields"));
+}
+
+function setParam(key, value) {
+  if (value === "") delete edState.work.params[key];
+  else edState.work.params[key] = value;
+}
+
+async function browseInto(key, kind) {
+  const r = await api().pick_file(kind);
+  if (!r || !r.ok) { if (r && r.error) toast(tr("err") + ": " + r.error, "err"); return; }
+  if (!r.path) return;                 // se cerro el dialogo sin elegir
+  setParam(key, r.path);
+  const input = $("edFields").querySelector(`input[data-f="${key}"]`);
+  if (input) { input.value = r.path; input.classList.remove("hasicon"); }
+  const ico = $("edFields").querySelector(`[data-ico="${key}"]`);
+  if (ico) ico.style.display = "none";
+  clearSuggestions(key);
+}
+
+// --- programas instalados -------------------------------------------------
+// El catalogo lo da Windows (el mismo que muestra el menu Inicio). Guardar
+// "app:<id>" en vez de una ruta hace que funcione igual con programas de la
+// Store, que no tienen ruta ninguna.
+const APP_PREFIX = "app:";
+let APPS = [];
+const APP_ICONS = {};
+
+const isApp = (v) => typeof v === "string" && v.startsWith(APP_PREFIX);
+const appIdOf = (v) => (isApp(v) ? v.slice(APP_PREFIX.length) : "");
+function appName(v) {
+  const id = appIdOf(v);
+  const hit = APPS.find((a) => a.id === id);
+  return hit ? hit.name : id;
+}
+
+// Puntuacion: cuanto mas "al principio" encaja lo escrito, mas arriba sale.
+// "dav" encuentra DaVinci por la palabra, "vsc" encuentra Visual Studio Code por
+// las iniciales. Buscar las letras sueltas por todo el nombre tambien encontraba
+// cosas, pero de las malas: con "spo" salia "Administracion de equipos".
+function appScore(name, q) {
+  const n = name.toLowerCase();
+  if (n === q) return 0;
+  if (n.startsWith(q)) return 1;
+  const words = n.split(/[\s\-_.()[\]]+/).filter(Boolean);
+  if (words.some((w) => w.startsWith(q))) return 2;
+  if (q.length > 1 && words.map((w) => w[0]).join("").startsWith(q)) return 3;
+  if (n.includes(q)) return 4;
+  return -1;
+}
+
+function searchApps(query, limit) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return APPS.slice(0, limit);
+  const scored = [];
+  for (const app of APPS) {
+    const score = appScore(app.name, q);
+    if (score >= 0) scored.push({ app, score });
+  }
+  scored.sort((a, b) => a.score - b.score || a.app.name.localeCompare(b.app.name));
+  return scored.slice(0, limit).map((s) => s.app);
+}
+
+function clearSuggestions(key) {
+  const box = $("edFields").querySelector(`[data-sug="${key}"]`);
+  if (box) box.innerHTML = "";
+}
+
+function showSuggestions(key, query) {
+  const box = $("edFields").querySelector(`[data-sug="${key}"]`);
+  if (!box) return;
+  const value = String(query || "").trim();
+  // Una ruta o una direccion ya dicen lo que son: ahi no hay nada que sugerir.
+  if (!value || /^([a-z]:[\\/]|\\\\|https?:|\.)/i.test(value)) { box.innerHTML = ""; return; }
+  const found = searchApps(value, 8);
+  if (!found.length) {
+    box.innerHTML = `<div class="row" style="cursor:default;color:var(--muted)">${tr("app_none")}</div>`;
+    return;
+  }
+  box.innerHTML = found.map((a) => {
+    const ico = APP_ICONS[a.id];
+    const left = ico ? `<img class="ico" src="${ico}" alt="">`
+      : `<span class="ph" data-ph="${esc(a.id)}">${esc((a.name[0] || "?").toUpperCase())}</span>`;
+    return `<div class="row" data-pick="${esc(a.id)}">${left}<span>${esc(a.name)}</span></div>`;
+  }).join("");
+  box.querySelectorAll("[data-pick]").forEach((row) => {
+    row.addEventListener("mousedown", (e) => { e.preventDefault(); chooseApp(key, row.dataset.pick); });
+  });
+  loadIconsFor(found.map((a) => a.id), box);
+}
+
+// Los iconos se piden solo para lo que hay en pantalla: pedir los 140 de golpe
+// tardaria segundos y casi ninguno se llega a ver.
+async function loadIconsFor(ids, box) {
+  const missing = ids.filter((id) => APP_ICONS[id] === undefined);
+  if (!missing.length) return;
+  let got = {};
+  try { got = await api().app_icons(missing, 32) || {}; } catch (e) { got = {}; }
+  for (const id of missing) APP_ICONS[id] = got[id] || "";
+  if (!box || !box.isConnected) return;
+  box.querySelectorAll("[data-ph]").forEach((ph) => {
+    const uri = APP_ICONS[ph.dataset.ph];
+    if (uri) ph.outerHTML = `<img class="ico" src="${uri}" alt="">`;
+  });
+}
+
+function chooseApp(key, id) {
+  setParam(key, APP_PREFIX + id);
+  const input = $("edFields").querySelector(`input[data-f="${key}"]`);
+  if (input) { input.value = appName(APP_PREFIX + id); input.classList.add("hasicon"); }
+  clearSuggestions(key);
+  paintFieldIcon(key, APP_PREFIX + id);
+}
+
+async function paintFieldIcon(key, value) {
+  const ico = $("edFields").querySelector(`[data-ico="${key}"]`);
+  if (!ico) return;
+  if (!isApp(value)) { ico.style.display = "none"; return; }
+  const id = appIdOf(value);
+  if (APP_ICONS[id] === undefined) await loadIconsFor([id], null);
+  if (APP_ICONS[id]) { ico.src = APP_ICONS[id]; ico.style.display = ""; }
+  else ico.style.display = "none";
 }
 function closeEditor() { closeAllMenus(); $("edOverlay").classList.remove("show"); edState = null; }
 
@@ -364,8 +567,24 @@ function captureKey(titleKey) {
   return new Promise((resolve) => {
     capResolve = resolve; capValue = "";
     $("capTitle").textContent = tr(titleKey); $("capBox").textContent = tr("cap_waiting");
+    $("capWarn").innerHTML = "";
     $("capOverlay").classList.add("show");
   });
+}
+
+// Preguntar a Windows si la combinación recién grabada ya es de alguien. Se hace
+// después de pintarla, para que el aviso nunca frene lo que se está tecleando.
+let capCheckT = null;
+function checkCaptured(combo) {
+  clearTimeout(capCheckT);
+  capCheckT = setTimeout(async () => {
+    let r = null;
+    try { r = await api().check_combo(combo); } catch (e) { r = null; }
+    if (!r || !r.taken || combo !== capValue) return;
+    $("capWarn").innerHTML = r.system
+      ? tr("taken_sys").replace("{q}", tr("sys_" + r.system) || r.system)
+      : tr("taken_other");
+  }, 90);
 }
 function keyName(e) {
   const c = e.code;
@@ -383,6 +602,8 @@ function onCaptureKeydown(e) {
   if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) { $("capBox").textContent = (mods.join("+") || "\u2026") + "+"; return; }
   capValue = [...mods, keyName(e)].join("+");
   $("capBox").textContent = capValue;
+  $("capWarn").innerHTML = "";
+  checkCaptured(capValue);
 }
 
 // --- render macropad ------------------------------------------------------
@@ -422,7 +643,8 @@ function renderPad() {
       <div class="khead"><div class="circle">${svg("media")}</div><div class="klabel">${tr("knob_word")} ${ki + 1}</div></div>
       <div class="chips">${subs.map(([s, lbl]) => {
         const txt = summary(kn[s].action);
-        return `<div class="chip" data-knob="${ki}" data-sub="${s}"><span class="cl">${lbl}</span><span class="cv">${esc(txt === "—" ? "" : txt)}</span></div>`;
+        const bad = CLASHES.has(`k:${state.layer}:${ki}:${s}`) ? " clash" : "";
+        return `<div class="chip${bad}" data-knob="${ki}" data-sub="${s}"><span class="cl">${lbl}</span><span class="cv">${esc(txt === "—" ? "" : txt)}</span></div>`;
       }).join("")}</div>
     </div>`).join("");
   const dims = gridDims(dev.rows, dev.columns, dev.orientation), g = $("grid");
@@ -433,7 +655,11 @@ function renderPad() {
     if (!b) continue;
     const a = b.action, empty = a.type === "unassigned", col = TYPE_COLOR[a.type];
     const led = b.color ? `<span class="ledtag" style="background:${LED_HEX[b.color]}" title="${tr(b.color)}"></span>` : "";
-    cells += `<div class="key ${empty ? "empty" : ""}" data-key="${i}" style="${empty ? "" : `border-color:${col}`}">
+    // Punto de aviso: su combinación la tiene cogida otro programa, así que esta
+    // tecla no llega a hacer nada por mucho que ponga aquí.
+    const bad = CLASHES.has(`b:${state.layer}:${i}`);
+    cells += `<div class="key ${empty ? "empty" : ""}${bad ? " clash" : ""}" data-key="${i}" style="${empty || bad ? "" : `border-color:${col}`}">
+      ${bad ? '<span class="clashdot"></span>' : ""}
       <div class="kn">T${i + 1}${led}</div><div class="ic" style="color:${empty ? "var(--muted)" : col}">${svg(a.type)}</div>
       <div class="kv">${esc(summary(a))}</div></div>`;
   }
@@ -452,6 +678,24 @@ function renderSteps() {
   $("steps").innerHTML = T[LANG].steps.map((s, i) => `<div class="step"><div class="num">${i + 1}</div><div class="st"><div class="t">${s.t}</div>${s.b}</div></div>`).join("");
 }
 function renderAll() { renderLayers(); renderLed(); renderLayoutBar(); renderPad(); renderHotkeys(); renderRemaps(); renderSteps(); }
+
+// --- teclas cuya combinación ya tiene cogida otro programa -----------------
+// Los combos parecen inventados a propósito para que nadie más los use, pero eso
+// no lo garantiza nada: en el ordenador donde se escribió esto, siete de los
+// cincuenta y cuatro estaban cogidos. Una tecla así no hace nada y no hay forma
+// de saberlo mirándola, de ahí el aviso.
+let CLASHES = new Set();
+async function scanClashes() {
+  let r = null;
+  try { r = await api().scan_conflicts(state.profile); } catch (e) { r = null; }
+  const list = (r && r.ok) ? (r.conflicts || []) : [];
+  CLASHES = new Set(list.map((c) => (c.knob >= 0 ? `k:${c.layer}:${c.knob}:${c.action}` : `b:${c.layer}:${c.index}`)));
+  const bar = $("clashBar");
+  if (!list.length) { bar.classList.remove("show"); renderPad(); return; }
+  $("clashText").innerHTML = list.length === 1 ? tr("clash_one") : tr("clash_many").replace("{n}", list.length);
+  bar.classList.add("show");
+  renderPad();
+}
 
 let toastT;
 function toast(msg, kind) { const t = $("toast"); t.textContent = msg; t.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => (t.className = "toast"), 2600); }
@@ -682,6 +926,14 @@ function wire() {
     offerAutostart();
   };
   $("autoChk").onchange = (e) => setAutostart(e.target.checked);
+  $("clashFix").onclick = async () => {
+    if (!(await confirmDialog(tr("clash_confirm")))) return;
+    // Solo se mueven las teclas en conflicto, y el perfil queda guardado en disco:
+    // lo que falta es llevar los combos nuevos a la memoria del teclado.
+    state.profile = await api().fix_conflicts(state.profile);
+    clearDirty(); renderAll(); await scanClashes();
+    toast(tr("clash_fixed"), "ok");
+  };
   $("flashBtn").onclick = async () => { if (!(await confirmDialog(tr("confirm_flash")))) return; toast(tr("flashing")); const r = await api().flash(state.profile); toast(r.ok ? `${tr("flashed")} (${r.n})` : tr("err") + ": " + r.error, r.ok ? "ok" : "err"); };
   $("listenBtn").onclick = async () => {
     const r = state.listener ? await api().stop_listener() : await api().start_listener();
@@ -700,6 +952,10 @@ async function init() {
   wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
   refreshAutostart();
   checkUpdate();
+  // La lista de programas y el repaso de combinaciones van después de pintar: son
+  // ayudas, y ninguna merece retrasar la ventana.
+  api().list_apps().then((list) => { APPS = list || []; }).catch(() => { APPS = []; });
+  scanClashes();
   // El tour no se lanza solo al abrir (molestaba en cada arranque). Esta a un clic
   // en la pestana "Guia" -> "Iniciar tour interactivo", o en el boton "Guia" de la cabecera.
 }

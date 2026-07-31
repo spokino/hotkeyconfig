@@ -31,21 +31,57 @@ _DEFAULT_KNOBS = {
 }
 
 
-def build_default_profile(device: Device | None = None) -> Profile:
-    """Starting profile for a layout: unique combos, unassigned buttons, knobs on media."""
+def busy_combos(keep: set[str] | None = None) -> set[str]:
+    """Combinations of the scheme that somebody else already holds."""
+    try:
+        from . import conflicts
+        return conflicts.taken_among(combos.every_combo(), ignore=keep)
+    except Exception:  # noqa: BLE001 - never block generating a profile over this
+        return set()
+
+
+def standalone_combos(profile) -> set[str]:
+    """Combos held by our own "works with the app closed" shortcuts.
+
+    Those shortcuts are registered with Windows, so they answer "taken" like any
+    other program would. Counting them as conflicts would move a key away from a
+    combo it is already using perfectly well.
+    """
+    held: set[str] = set()
+    for layer in getattr(profile, "layers", []):
+        for binding in getattr(layer, "buttons", []):
+            if getattr(binding, "standalone", False) and binding.combo:
+                held.add(binding.combo)
+    return held
+
+
+def build_default_profile(device: Device | None = None,
+                          keep: set[str] | None = None) -> Profile:
+    """Starting profile for a layout: unique combos, unassigned buttons, knobs on media.
+
+    Combinations another program already answers to are skipped. A key whose combo
+    is taken elsewhere just does nothing when pressed, and there is no way to tell
+    by looking at it, so it is worth a moment here. ``keep`` lists combos that look
+    taken because of our own Windows shortcuts, which must not count.
+    """
     device = device or Device()
+    avoid = busy_combos(keep)
     per_layer = device.rows * device.columns
+    button_list = combos.button_combos(combos.LAYERS, per_layer, avoid)
+    knob_list = combos.knob_combos(combos.LAYERS, device.knobs, avoid)
+    per_knob_layer = device.knobs * len(combos.KNOB_ACTIONS)
     layers: list[Layer] = []
     for li in range(combos.LAYERS):
         buttons = [
-            Binding(combos.button_combo(li, i, per_layer), Action("unassigned"))
+            Binding(button_list[li * per_layer + i], Action("unassigned"))
             for i in range(per_layer)
         ]
         knobs: list[dict[str, Binding]] = []
         for ki in range(device.knobs):
             kd: dict[str, Binding] = {}
             for act in combos.KNOB_ACTIONS:
-                combo = combos.knob_combo(li, ki, act, device.knobs)
+                combo = knob_list[li * per_knob_layer + ki * len(combos.KNOB_ACTIONS)
+                                  + combos.KNOB_ACTIONS.index(act)]
                 key = _DEFAULT_KNOBS.get(ki, {}).get(act)
                 action = Action("native", {"key": key}) if key else Action("unassigned")
                 kd[act] = Binding(combo, action)

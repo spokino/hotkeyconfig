@@ -145,6 +145,97 @@ class Api:
                  "supported": m.family in models_mod.SUPPORTED_FAMILIES}
                 for m in models_mod.CATALOGUE]
 
+    # --- elegir el destino sin escribirlo a mano -------------------------
+    def pick_file(self, kind: str = "file") -> dict:
+        """Windows' own file picker, for the target of an action.
+
+        Typing the path of a program by hand is the least friendly corner of the
+        whole interface: nobody knows where an .exe lives, and one wrong letter
+        makes the key do nothing with no explanation.
+        """
+        if self._window is None:
+            return {"ok": False, "error": "no window"}
+        try:
+            import webview
+
+            if kind == "folder":
+                chosen = self._window.create_file_dialog(webview.FOLDER_DIALOG)
+            else:
+                chosen = self._window.create_file_dialog(
+                    webview.OPEN_DIALOG, allow_multiple=False,
+                    file_types=("Programs (*.exe;*.bat;*.cmd;*.ps1;*.py;*.lnk)", "All files (*.*)"))
+            if not chosen:
+                return {"ok": True, "path": ""}     # se cerro el dialogo, no es un fallo
+            path = chosen[0] if isinstance(chosen, (list, tuple)) else str(chosen)
+            return {"ok": True, "path": path}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def list_apps(self) -> list[dict]:
+        """Installed applications, for the search box in the action editor."""
+        from . import apps
+        try:
+            return [{"id": a["id"], "name": a["name"]} for a in apps.catalogue()]
+        except Exception:  # noqa: BLE001 - the search box is a shortcut, not a requirement
+            return []
+
+    def app_icons(self, app_ids: list[str], size: int = 32) -> dict:
+        """Icons for the apps currently on screen, in one call."""
+        from . import apps
+        try:
+            return apps.icons(list(app_ids or []), int(size))
+        except Exception:  # noqa: BLE001
+            return {}
+
+    # --- combinaciones que ya usa otro programa ---------------------------
+    def check_combo(self, combo: str) -> dict:
+        """Is this combination free? Used while recording a keyboard shortcut."""
+        from . import conflicts
+        try:
+            return conflicts.check(combo)
+        except Exception:  # noqa: BLE001
+            return {"combo": combo, "taken": False, "system": ""}
+
+    def scan_conflicts(self, data: dict) -> dict:
+        """Which keys of this profile carry a combo somebody else answers to.
+
+        Returned as a list of ``{"layer", "index", "combo", "system"}`` so the
+        interface can point at the exact key instead of saying "something is
+        wrong somewhere".
+        """
+        from . import conflicts
+        from .cli import standalone_combos
+        try:
+            prof = Profile.from_dict(data)
+            ours = standalone_combos(prof)
+            found = []
+            for li, layer in enumerate(prof.layers):
+                for bi, binding in enumerate(layer.buttons):
+                    report = conflicts.check(binding.combo, ignore=ours)
+                    if report["taken"]:
+                        found.append({"layer": li, "index": bi, "knob": -1,
+                                      "combo": report["combo"], "system": report["system"]})
+                for ki, knob in enumerate(layer.knobs):
+                    for act in ("ccw", "press", "cw"):
+                        report = conflicts.check(knob[act].combo, ignore=ours)
+                        if report["taken"]:
+                            found.append({"layer": li, "index": ki, "knob": ki, "action": act,
+                                          "combo": report["combo"], "system": report["system"]})
+            return {"ok": True, "conflicts": found}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
+    def fix_conflicts(self, data: dict) -> dict:
+        """Move the clashing keys onto free combinations, keeping every action.
+
+        The layout does not change; only the combos behind it do, which is exactly
+        what regenerating with the same shape does. The keyboard has to be flashed
+        again afterwards, because the new combos live in its memory.
+        """
+        device = data.get("device", {})
+        return self.resize_layout(data, device.get("rows"), device.get("columns"),
+                                  device.get("knobs"), device.get("orientation"))
+
     def browsers(self) -> list[dict]:
         """Installed browsers, to pick one in an 'open' action."""
         from . import browsers as browsers_mod
@@ -165,7 +256,7 @@ class Api:
 
     def resize_layout(self, current: dict, rows: int, columns: int, knobs: int, orientation: str) -> dict:
         """Change the layout keeping actions, lighting and shortcuts (combos are regenerated)."""
-        from .cli import build_default_profile
+        from .cli import build_default_profile, standalone_combos
         from .profile import Device, Profile
         old = Profile.from_dict(current)
         # Name and USB ids belong to the keyboard, not to its shape: rebuilding the
@@ -175,7 +266,9 @@ class Api:
                      model=old.device.model, rows=int(rows), columns=int(columns),
                      knobs=int(knobs), orientation=orientation,
                      knob_side=old.device.knob_side)
-        new = build_default_profile(dev)
+        # Our own shortcuts hold their combos with Windows: without this the keys
+        # that already work without the app would look like conflicts and get moved.
+        new = build_default_profile(dev, keep=standalone_combos(old))
         for li, layer in enumerate(new.layers):
             if li >= len(old.layers):
                 break
@@ -327,6 +420,12 @@ def run(profile_path: str | Path) -> int:
     # while the Python side was already the new one. There is nothing to gain by
     # caching a handful of local files.
     os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-http-cache")
+
+    # Reading the list of installed apps takes about a second, and it is needed the
+    # moment somebody opens a key editor. Doing it now, on another thread, means the
+    # search box is already full by then.
+    from . import apps
+    apps.warm_up()
 
     api = Api(profile_path)
     window = webview.create_window(

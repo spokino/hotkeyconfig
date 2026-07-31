@@ -40,12 +40,43 @@ _KEYBOARD_MOD_ALIASES = {"win": "windows"}
 _CAPACITY = len(_FKEYS)
 
 
+def _pool(families: list[tuple]) -> list[str]:
+    """Every combo these families can produce, in the order slots are handed out."""
+    return ["+".join([*family, fkey]) for family in families for fkey in _FKEYS]
+
+
 def _alloc(families: list[tuple], slot: int) -> str:
     """Deterministically assign a (family, F key) combo to the global index ``slot``."""
     fam_idx, fk_idx = divmod(slot, _CAPACITY)
     if fam_idx >= len(families):
         raise ValueError("layout too large for the unique combo scheme")
     return "+".join([*families[fam_idx], _FKEYS[fk_idx]])
+
+
+def _dodge(families: list[tuple], count: int, avoid: set[str] | None) -> list[str]:
+    """The first ``count`` combos, sending the ones somebody else holds elsewhere.
+
+    Only the clashing keys move, and they move to slots this layout does not use.
+    Rewriting the whole assignment would be simpler, but the new combos only take
+    effect once the keyboard is flashed again: until then every key that moved is
+    mute, so moving two beats moving fifty.
+    """
+    every = _pool(families)
+    if count > len(every):
+        raise ValueError("layout too large for the unique combo scheme")
+    chosen = every[:count]
+    if not avoid:
+        return chosen
+    spare = [combo for combo in every[count:] if combo not in avoid]
+    result = []
+    for combo in chosen:
+        if combo in avoid and spare:
+            result.append(spare.pop(0))
+        else:
+            # No spare left: keeping the original is the least bad option, and the
+            # interface still reports it as a conflict.
+            result.append(combo)
+    return result
 
 
 def button_combo(layer: int, index: int, buttons_per_layer: int = ROWS * COLUMNS) -> str:
@@ -61,17 +92,33 @@ def knob_combo(layer: int, knob: int, action: str, knobs: int = KNOBS) -> str:
     return _alloc(_KNOB_FAMILIES, slot)
 
 
+def button_combos(layers: int, buttons_per_layer: int,
+                  avoid: set[str] | None = None) -> list[str]:
+    """Combos for every button of every layer, avoiding what others already hold."""
+    return _dodge(_BUTTON_FAMILIES, layers * buttons_per_layer, avoid)
+
+
+def knob_combos(layers: int, knobs: int, avoid: set[str] | None = None) -> list[str]:
+    """Combos for every knob action of every layer, in ``KNOB_ACTIONS`` order."""
+    return _dodge(_KNOB_FAMILIES, layers * knobs * len(KNOB_ACTIONS), avoid)
+
+
+def every_combo() -> list[str]:
+    """Every combination the scheme could ever hand out, buttons and knobs."""
+    return _pool(_BUTTON_FAMILIES) + _pool(_KNOB_FAMILIES)
+
+
 def all_combos(rows: int = ROWS, columns: int = COLUMNS, knobs: int = KNOBS,
-               layers: int = LAYERS) -> list[str]:
+               layers: int = LAYERS, avoid: set[str] | None = None) -> list[str]:
     """Every combo of the layout, in deterministic order (used to check uniqueness)."""
     per_layer = rows * columns
+    buttons = button_combos(layers, per_layer, avoid)
+    knob_list = knob_combos(layers, knobs, avoid)
     combos: list[str] = []
     for layer in range(layers):
-        for index in range(per_layer):
-            combos.append(button_combo(layer, index, per_layer))
-        for knob in range(knobs):
-            for action in KNOB_ACTIONS:
-                combos.append(knob_combo(layer, knob, action, knobs))
+        combos.extend(buttons[layer * per_layer:(layer + 1) * per_layer])
+        per_knob_layer = knobs * len(KNOB_ACTIONS)
+        combos.extend(knob_list[layer * per_knob_layer:(layer + 1) * per_knob_layer])
     return combos
 
 

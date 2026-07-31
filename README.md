@@ -135,7 +135,9 @@ Every knob has three actions: turn left, press, turn right.
 
 1. **Plug in the macropad** and press **Flash keyboard**. This writes a unique code for every key
    into the keyboard's own memory. It only has to be done once, and it survives without the app.
-2. **Click any key or knob** and pick what it does. Press **Test** to try it right away.
+2. **Click any key or knob** and pick what it does. To open a program, type its name and **pick it
+   from the list of what you have installed** (icon included), or press the folder to browse for the
+   file. Press **Test** to try it right away.
 3. **Tick "Always on"** and forget about it: the listener starts with Windows, so your keys answer
    with this window closed and after a restart. Or use **Start listener** for just this session.
 
@@ -155,6 +157,21 @@ Every knob has three actions: turn left, press, turn right.
 | `sequence` | Several actions in order | `steps` |
 | `native` | Written into the hardware (volume and so on) | `key` |
 | `unassigned` | Does nothing | (none) |
+
+On `open`, `target` can be a path, a URL, or `app:<id>`, which is what the interface stores when you
+pick a program from the list. Windows hands out that id, so it works just as well for Microsoft
+Store apps, which have no path to point at.
+
+### Combinations another program already holds
+
+The combos written into the keyboard (`Ctrl+Alt+F13` and friends) are meant to be ones nothing else
+uses, but nothing guarantees that: on the machine this was written on, 7 of the 54 were already
+taken. A key like that does nothing when pressed, and there is no way to tell by looking at it.
+
+The app asks Windows and says so on the macropad screen, with a button to move them onto free
+combinations (only the affected keys move, and the keyboard needs flashing again). Same when you
+record a shortcut on your normal keyboard: if Windows already uses it, you are told what for before
+you assign it.
 
 ### Making a key work with the app closed
 

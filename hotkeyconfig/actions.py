@@ -15,7 +15,7 @@ import time
 import webbrowser
 from typing import Any
 
-from . import browsers, winfocus
+from . import apps, browsers, winfocus
 
 log = logging.getLogger("hotkeyconfig.actions")
 
@@ -61,6 +61,12 @@ def _open(p: dict[str, Any]) -> None:
     target = p.get("target", "")
     if not target:
         log.warning("'open' action without 'target'")
+        return
+    if apps.is_app_target(target):
+        # An app picked from the installed list. Windows knows how to start it,
+        # whether it is a Store app or a plain executable.
+        winfocus.allow_foreground()
+        apps.launch(apps.app_id_of(target))
         return
     is_url = target.startswith(("http://", "https://"))
     # An empty "browser" means whichever one the system uses for links.

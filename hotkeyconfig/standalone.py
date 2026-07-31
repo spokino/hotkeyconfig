@@ -158,6 +158,16 @@ def _target_and_args(action_params: dict) -> tuple[str, str]:
     if not target:
         return "", ""
 
+    # An app picked from the installed list already carries the id Windows uses to
+    # launch it, so there is nothing to guess: no registry lookup and no asking
+    # PowerShell for it, which is what the older "spotify:" path had to do.
+    from . import apps
+    if apps.is_app_target(target):
+        app_id = apps.app_id_of(target)
+        if os.path.isabs(app_id) and os.path.exists(app_id):
+            return app_id, ""
+        return rf"shell:AppsFolder\{app_id}", ""
+
     if target.startswith(("http://", "https://")):
         from . import browsers
         exe = browsers.resolve(action_params.get("browser")) or browsers.default_browser()
