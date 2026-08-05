@@ -10,16 +10,16 @@ log = logging.getLogger("hotkeyconfig.tray")
 
 
 def _make_icon_image():
-    from PIL import Image, ImageDraw
+    """The app logo, the same one the executable and the installer wear.
 
-    img = Image.new("RGB", (64, 64), (24, 24, 28))
-    draw = ImageDraw.Draw(img)
-    # A minimal 3x4 grid that evokes the macropad.
-    for r in range(3):
-        for c in range(4):
-            x, y = 8 + c * 13, 10 + r * 15
-            draw.rounded_rectangle([x, y, x + 9, y + 11], radius=2, fill=(90, 140, 255))
-    return img
+    It used to be a 3x4 grid of blue rectangles drawn here, which was the only
+    place with a different drawing. Asked for at 32 pixels, which is what Windows
+    wants for the tray: drawing it bigger and letting the system shrink it blurs
+    the dots and the bars.
+    """
+    from . import brandmark
+
+    return brandmark.draw_mark(32)
 
 
 def run_tray(runtime) -> None:
