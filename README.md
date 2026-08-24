@@ -62,7 +62,7 @@ desktop app that programs the keyboard **over native Windows HID**, then runs yo
   <img src="branding/screenshots/en/01-macropad.png" alt="HotKeyConfig main screen" width="820" />
 </div>
 
-<p align="center"><em>Main screen: layers, per layer RGB light, your keyboard picked from a list, and every key showing the action bound to it.</em></p>
+<p align="center"><em>Main screen: layers, per layer RGB light, and every key showing the action bound to it.</em></p>
 
 | Pick your keyboard | Action editor |
 | :--: | :--: |
@@ -72,6 +72,11 @@ desktop app that programs the keyboard **over native Windows HID**, then runs yo
 | Keyboard shortcuts | Interactive guide |
 | :--: | :--: |
 | <img src="branding/screenshots/en/03-shortcuts.png" alt="Global shortcuts and remaps" /> | <img src="branding/screenshots/en/04-guide.png" alt="Interactive guide" /> |
+| Every combo drawn key by key, the way it sits on the keyboard. | A tour through the real window, highlighting each button. |
+
+| Settings | |
+| :--: | :--: |
+| <img src="branding/screenshots/en/06-settings.png" alt="Settings tab" /> | Start with Windows, whether the keys answer right now, which keyboard you have, where your configuration lives, and the language. |
 
 ---
 

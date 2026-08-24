@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hotkeyconfig"
-version = "0.8.2"
+version = "0.9.0"
 description = "Programa macropads ch57x (1189:8842) y asigna scripts/atajos a cada tecla."
 readme = "README.md"
 requires-python = ">=3.11"

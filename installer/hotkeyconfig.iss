@@ -9,7 +9,7 @@
 #define MyAppName "HotKeyConfig"
 #define MyAppDirName "hotkeyconfig"
 #ifndef MyAppVersion
-  #define MyAppVersion "0.8.2"
+  #define MyAppVersion "0.9.0"
 #endif
 #define MyAppPublisher "Munir Torres"
 #define MyAppURL "https://github.com/Mun1to/hotkeyconfig"

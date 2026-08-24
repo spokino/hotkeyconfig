@@ -240,7 +240,9 @@ SHOTS = [
     ("03-shortcuts", "closeEditor(); switchSection('keys'); ''"),
     ("04-guide", "switchSection('guide'); ''"),
     # El catalogo de teclados desplegado: es lo que responde a "¿vale para el mio?".
-    ("05-models", "switchSection('pad'); $('lbModel')._enh.trigger.click(); ''"),
+    # Vive en Ajustes desde la 0.9.0, no en Macropad.
+    ("05-models", "switchSection('cfg'); $('lbModel')._enh.trigger.click(); ''"),
+    ("06-settings", "closeAllMenus(); switchSection('cfg'); ''"),
 ]
 
 
@@ -278,6 +280,7 @@ def run_shots(window) -> None:
 
 
 def main() -> None:
+    os.environ.setdefault("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", "--disable-http-cache")
     tmp = Path(tempfile.gettempdir()) / "hotkeyconfig-demo-profile.yaml"
     save(demo_profile(), tmp)
 

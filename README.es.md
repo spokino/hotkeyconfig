@@ -63,7 +63,7 @@ acciones.
   <img src="branding/screenshots/es/01-macropad.png" alt="Pantalla principal de HotKeyConfig" width="820" />
 </div>
 
-<p align="center"><em>Pantalla principal: capas, luz RGB por capa, tu teclado elegido de una lista y cada tecla mostrando la acción que tiene asignada.</em></p>
+<p align="center"><em>Pantalla principal: capas, luz RGB por capa y cada tecla mostrando la acción que tiene asignada.</em></p>
 
 | Elige tu teclado | Editor de acciones |
 | :--: | :--: |
@@ -73,6 +73,11 @@ acciones.
 | Atajos de teclado | Guía interactiva |
 | :--: | :--: |
 | <img src="branding/screenshots/es/03-shortcuts.png" alt="Atajos globales y remapeos" /> | <img src="branding/screenshots/es/04-guide.png" alt="Guía interactiva" /> |
+| Cada combinación dibujada tecla a tecla, como está en el teclado. | Un tour que te lleva por la ventana real, resaltando cada botón. |
+
+| Ajustes | |
+| :--: | :--: |
+| <img src="branding/screenshots/es/06-settings.png" alt="Pestaña de ajustes" /> | Arrancar con Windows, si las teclas responden ahora mismo, qué teclado tienes, dónde está tu configuración e idioma. |
 
 ---
 
