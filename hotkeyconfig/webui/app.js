@@ -84,6 +84,7 @@ const T = {
     auto_off_note: "Quitado del arranque. El listener de ahora sigue activo hasta que reinicies",
     listener_is_auto: "Lo arranca Windows y no se ha podido parar. Quítalo de Ajustes → Arrancar con Windows",
     listen_sub_on: "responden ahora mismo", listen_sub_off: "ahora mismo no responden",
+    model_hint: "elige el tuyo, o pon las medidas a mano", dev_none: "ninguno detectado",
     listen_sub_auto: "responden, y seguirán al reiniciar el ordenador",
     upd_checking: "comprobando…", upd_latest: "estás en la última versión",
     upd_found: "hay una versión nueva: {v}", upd_offline: "no se ha podido comprobar",
@@ -99,8 +100,9 @@ const T = {
       { t: "Conecta y flashea", b: "Enchufa el macropad y pulsa <b>Flashear teclado</b>. Se graban en su memoria los códigos únicos de cada tecla (persisten sin la app)." },
       { t: "Asigna acciones", b: "En <b>Macropad</b>, haz clic en una tecla o perilla y elige qué hace: abrir Spotify, ejecutar un script, escribir texto, multimedia… Usa <b>Probar</b> para verla en acción." },
       { t: "Atajos del teclado normal", b: "En <b>Atajos de teclado</b> graba cualquier combo (ej. Ctrl+Alt+S) y asígnale una acción, o remapea una tecla por otra." },
-      { t: "Enciende el listener", b: "Pulsa <b>Iniciar listener</b> para que las acciones respondan. Se puede iniciar solo con Windows para no abrirlo cada vez." },
-      { t: "Ajusta a tu hardware", b: "En <b>Macropad</b> cambia filas, columnas, perillas u orientación con los pasos de <b>Estructura</b>. La luz RGB se elige arriba, por capa." },
+      { t: "Enciende el listener", b: "Pulsa <b>Iniciar listener</b> para que las acciones respondan mientras uses el ordenador." },
+      { t: "Ajusta a tu hardware", b: "En <b>Ajustes</b> di qué teclado tienes: modelo, dónde están las perillas y si lo tienes girado. La luz RGB se elige en <b>Macropad</b>, por capa." },
+      { t: "Que funcionen sin la app", b: "En <b>Ajustes</b>, enciende <b>Arrancar con Windows</b> y tus teclas responderán nada más encender el ordenador, con esta ventana cerrada." },
     ],
   },
   en: {
@@ -155,6 +157,7 @@ const T = {
     auto_off_note: "Removed from startup. The one running now stays until you restart",
     listener_is_auto: "Windows starts it and it would not stop. Turn off Settings → Start with Windows",
     listen_sub_on: "answering right now", listen_sub_off: "not answering right now",
+    model_hint: "pick yours, or set the measurements by hand", dev_none: "none found",
     listen_sub_auto: "answering, and they will after a restart too",
     upd_checking: "checking…", upd_latest: "you are on the latest version",
     upd_found: "a new version is out: {v}", upd_offline: "could not check",
@@ -170,8 +173,9 @@ const T = {
       { t: "Connect and flash", b: "Plug in the macropad and press <b>Flash keyboard</b>. It writes each key's unique code into its memory (they persist without the app)." },
       { t: "Assign actions", b: "In <b>Macropad</b>, click a key or knob and pick what it does: open Spotify, run a script, type text, media… Use <b>Test</b> to see it in action." },
       { t: "Normal keyboard shortcuts", b: "In <b>Keyboard shortcuts</b> record any combo (e.g. Ctrl+Alt+S) and assign an action, or remap one key to another." },
-      { t: "Turn on the listener", b: "Press <b>Start listener</b> so the actions respond. It can start with Windows so you don't open it every time." },
-      { t: "Match your hardware", b: "In <b>Macropad</b> change rows, columns, knobs or orientation with the <b>Structure</b> steppers. RGB light is chosen at the top, per layer." },
+      { t: "Turn on the listener", b: "Press <b>Start listener</b> so the actions respond while you use the computer." },
+      { t: "Match your hardware", b: "In <b>Settings</b> say which keyboard you have: model, where the knobs are and whether it is turned around. RGB light is chosen in <b>Macropad</b>, per layer." },
+      { t: "Working without the app", b: "In <b>Settings</b>, turn on <b>Start with Windows</b> and your keys answer as soon as you log in, with this window closed." },
     ],
   },
 };
@@ -221,7 +225,7 @@ let cselGlobalWired = false;
 function closeAllMenus(except) { CSELECTS.forEach((e) => { if (e !== except && e.open) e.close(); }); }
 function enhanceSelect(sel) {
   if (sel._enh) return sel._enh;
-  const inline = !!sel.closest("header, .subbar, .layoutbar");
+  const inline = !!sel.closest("header, .subbar");
   const wrap = document.createElement("div");
   wrap.className = "csel" + (inline ? " inline" : "");
   sel.parentNode.insertBefore(wrap, sel);
@@ -720,13 +724,37 @@ function renderPad() {
   g.innerHTML = cells;
 }
 
+// Los combos se guardan como "ctrl+alt+s" y asi escritos parecen una ruta de
+// archivo. Se dibujan tecla a tecla, que es como estan en el teclado de verdad.
+const KEY_LABEL = {
+  ctrl: "Ctrl", control: "Ctrl", alt: "Alt", altgr: "AltGr", shift: "Shift",
+  win: "Win", windows: "Win", cmd: "Win", meta: "Win",
+  esc: "Esc", escape: "Esc", enter: "Enter", tab: "Tab", space: "Space",
+  backspace: "Backspace", delete: "Supr", insert: "Ins",
+  "caps lock": "Caps Lock", capslock: "Caps Lock",
+  "page up": "Re Pag", "page down": "Av Pag", home: "Inicio", end: "Fin",
+  up: "\u2191", down: "\u2193", left: "\u2190", right: "\u2192",
+};
+function keyLabel(key) {
+  const k = String(key || "").trim().toLowerCase();
+  if (KEY_LABEL[k]) return KEY_LABEL[k];
+  if (/^f\d{1,2}$/.test(k)) return k.toUpperCase();
+  if (k.length === 1) return k.toUpperCase();
+  return k.charAt(0).toUpperCase() + k.slice(1);
+}
+function keysHtml(combo) {
+  const parts = String(combo || "").split("+").map((p) => p.trim()).filter(Boolean);
+  if (!parts.length) return "";
+  return '<span class="keys">' + parts.map((p) => `<kbd>${esc(keyLabel(p))}</kbd>`)
+    .join('<span class="plus">+</span>') + "</span>";
+}
 function renderHotkeys() {
   const hk = state.profile.hotkeys || (state.profile.hotkeys = []);
-  $("hotkeys").innerHTML = hk.length ? hk.map((h, i) => `<div class="item"><span class="kbd">${esc(h.combo)}</span><span class="desc">${esc(summary(h.action))}</span><button class="btn" data-edit="${i}" style="padding:5px 10px">${tr("edit")}</button><button class="x" data-del="${i}">\u2715</button></div>`).join("") : `<p style="color:var(--muted);font-size:13px">${tr("none_hotkeys")}</p>`;
+  $("hotkeys").innerHTML = hk.length ? hk.map((h, i) => `<div class="item">${keysHtml(h.combo)}<span class="desc">${esc(summary(h.action))}</span><button class="btn" data-edit="${i}" style="padding:5px 10px">${tr("edit")}</button><button class="x" data-del="${i}">\u2715</button></div>`).join("") : `<div class="item"><span class="empty">${tr("none_hotkeys")}</span></div>`;
 }
 function renderRemaps() {
   const rm = state.profile.remaps || (state.profile.remaps = []);
-  $("remaps").innerHTML = rm.length ? rm.map((r, i) => `<div class="item"><span class="kbd">${esc(r.from)}</span><span style="color:var(--muted)">\u2192</span><span class="kbd">${esc(r.to)}</span><span class="desc"></span><button class="x" data-delr="${i}">\u2715</button></div>`).join("") : `<p style="color:var(--muted);font-size:13px">${tr("none_remaps")}</p>`;
+  $("remaps").innerHTML = rm.length ? rm.map((r, i) => `<div class="item">${keysHtml(r.from)}<span style="color:var(--muted)">\u2192</span>${keysHtml(r.to)}<span class="desc"></span><button class="x" data-delr="${i}">\u2715</button></div>`).join("") : `<div class="item"><span class="empty">${tr("none_remaps")}</span></div>`;
 }
 function renderSteps() {
   $("steps").innerHTML = T[LANG].steps.map((s, i) => `<div class="step"><div class="num">${i + 1}</div><div class="st"><div class="t">${s.t}</div>${s.b}</div></div>`).join("");
@@ -808,7 +836,8 @@ async function pollStatus() {
     // decirlo asi manda al usuario a revisar un cable que esta perfecto.
     $("devTxt").textContent = s.connected ? tr("connected")
       : (s.unsupported ? tr("dev_unsupported") : tr("disconnected"));
-    $("lbUsb").textContent = s.usb || "";
+    $("lbUsb").textContent = s.usb || tr("dev_none");
+    if ($("devTxt2")) $("devTxt2").textContent = s.connected ? tr("connected") : "";
     setListenerBtn();
     paintListenRow();
   } catch (e) { /* */ }
@@ -874,7 +903,8 @@ const TOUR = [
   { sec: "pad", sel: ".grid .key" },
   { sec: "keys", sel: "#addHotkey" },
   { sec: "pad", sel: "#listenBtn" },
-  { sec: "pad", sel: ".layoutbar" },
+  { sec: "cfg", sel: "#cfgKeyboard" },
+  { sec: "cfg", sel: "#cfgAutoRow" },
 ];
 let tourStep = 0, tourOn = false;
 function startTour() { tourOn = true; tourStep = 0; showTourStep(); }
@@ -925,7 +955,7 @@ function renderModelBar() {
   }).join("");   // el enhancer se resincroniza solo al cambiar los options
   $("lbCustom").style.display = d.model === CUSTOM_ID ? "" : "none";
   const actual = MODELS.filter((m) => m.id === d.model)[0];
-  $("lbNote").textContent = actual && actual.note ? tr(actual.note) : "";
+  $("lbNote").textContent = actual && actual.note ? tr(actual.note) : tr("model_hint");
 }
 
 async function pickModel(id) {
@@ -981,7 +1011,7 @@ function wire() {
   $("knobs").addEventListener("click", (e) => { const c = e.target.closest(".chip"); if (!c) return; const b = state.profile.layers[state.layer].knobs[+c.dataset.knob][c.dataset.sub]; openEditor(b, `${tr("knob_word")} ${+c.dataset.knob + 1}`, () => { markDirty(); renderPad(); }); });
   $("ledMode").onchange = setLed; $("ledColor").onchange = setLed;
 
-  document.querySelector(".layoutbar").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
+  document.querySelector("#cfgKeyboard").addEventListener("click", (e) => { const b = e.target.closest("[data-d]"); if (b) changeLayout(b.dataset.d, +b.dataset.v); });
   $("lbOrient").onchange = (e) => { state.profile.device.orientation = e.target.value; renderPad(); saveDevice(); };
   $("lbModel").onchange = (e) => pickModel(e.target.value);
   $("lbSide").onchange = (e) => { state.profile.device.knob_side = e.target.value; renderPad(); saveDevice(); };
