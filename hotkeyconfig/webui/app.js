@@ -82,7 +82,12 @@ const T = {
     auto_hint: "Las teclas responden aunque cierres esta ventana, y siguen funcionando al reiniciar el ordenador.",
     auto_on: "Listo: tus teclas funcionan siempre", auto_off: "Las teclas solo funcionarán con el listener activo",
     auto_off_note: "Quitado del arranque. El listener de ahora sigue activo hasta que reinicies",
-    listener_is_auto: "Lo arranca Windows solo. Desmarca «Siempre activas» para quitarlo",
+    listener_is_auto: "Lo arranca Windows y no se ha podido parar. Quítalo de Ajustes → Arrancar con Windows",
+    listen_sub_on: "responden ahora mismo", listen_sub_off: "ahora mismo no responden",
+    listen_sub_auto: "responden, y seguirán al reiniciar el ordenador",
+    upd_checking: "comprobando…", upd_latest: "estás en la última versión",
+    upd_found: "hay una versión nueva: {v}", upd_offline: "no se ha podido comprobar",
+    theme_light: "claro", theme_dark: "oscuro",
     auto_ask: "Tus teclas solo responden mientras el listener está activo, y ahora mismo eso significa tener esta ventana abierta.<br><br>¿Quieres que <b>funcionen siempre</b>, también al reiniciar el ordenador?",
     version_available: "Versión {v} disponible", update_now: "Actualizar", download: "Descargar", updating: "Descargando actualización…",
     confirm_flash: "Se grabarán los combos y la iluminación en la MEMORIA del teclado. ¿Continuar?",
@@ -148,7 +153,12 @@ const T = {
     auto_hint: "Your keys answer even with this window closed, and keep working after a restart.",
     auto_on: "Done: your keys work all the time", auto_off: "Keys will only work while the listener runs",
     auto_off_note: "Removed from startup. The one running now stays until you restart",
-    listener_is_auto: "Windows starts it on its own. Untick «Always on» to remove it",
+    listener_is_auto: "Windows starts it and it would not stop. Turn off Settings → Start with Windows",
+    listen_sub_on: "answering right now", listen_sub_off: "not answering right now",
+    listen_sub_auto: "answering, and they will after a restart too",
+    upd_checking: "checking…", upd_latest: "you are on the latest version",
+    upd_found: "a new version is out: {v}", upd_offline: "could not check",
+    theme_light: "light", theme_dark: "dark",
     auto_ask: "Your keys only answer while the listener is running, and right now that means keeping this window open.<br><br>Do you want them to <b>work all the time</b>, restarts included?",
     version_available: "Version {v} available", update_now: "Update", download: "Download", updating: "Downloading update…",
     confirm_flash: "This writes the combos and lighting into the keyboard's MEMORY. Continue?",
@@ -168,7 +178,7 @@ const T = {
 let LANG = "es";
 const tr = (k) => (T[LANG] && T[LANG][k] != null ? T[LANG][k] : (T.es[k] != null ? T.es[k] : k));
 
-const state = { profile: null, layer: 0, section: "pad", listener: false, dirty: false, update: null };
+const state = { profile: null, layer: 0, section: "pad", listener: false, dirty: false, update: null, autostart: false };
 const $ = (id) => document.getElementById(id);
 const api = () => window.pywebview.api;
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -338,7 +348,9 @@ function applyLang(lang) {
   if (state.profile) renderAll();
   refreshUpdateBar();
   syncSelects();
-  if ($("autoWrap")) $("autoWrap").title = tr("auto_hint");
+  setListenerBtn();
+  pollStatus();   // el estado del teclado se escribe desde JS, no lleva data-en
+  if ($("cfgAutoRow")) { fillSettings(); paintListenRow(); }
 }
 
 // --- editor modal ---------------------------------------------------------
@@ -747,10 +759,24 @@ function toast(msg, kind) { const t = $("toast"); t.textContent = msg; t.classNa
 async function refreshAutostart() {
   let on = false;
   try { on = !!(await api().autostart_status()).enabled; } catch (e) { on = false; }
+  state.autostart = on;
   $("autoChk").checked = on;
-  $("autoWrap").classList.toggle("on", on);
-  $("autoWrap").title = tr("auto_hint");
+  $("cfgAutoRow").classList.toggle("on", on);
+  $("cfgAutoRow").title = tr("auto_hint");
+  paintListenRow();
   return on;
+}
+// La fila de al lado dice si las teclas responden AHORA, que es distinto de
+// arrancar con Windows: se puede tener lo uno sin lo otro, y confundirlos era
+// justo el problema de la casilla vieja.
+function paintListenRow() {
+  const on = !!state.listener;
+  if (!$("cfgListenChk")) return;
+  $("cfgListenChk").checked = on;
+  $("cfgListenRow").classList.toggle("on", on);
+  $("cfgListenSub").textContent = on
+    ? (state.autostart ? tr("listen_sub_auto") : tr("listen_sub_on"))
+    : tr("listen_sub_off");
 }
 async function setAutostart(on) {
   const r = await api().set_autostart(on);
@@ -784,6 +810,7 @@ async function pollStatus() {
       : (s.unsupported ? tr("dev_unsupported") : tr("disconnected"));
     $("lbUsb").textContent = s.usb || "";
     setListenerBtn();
+    paintListenRow();
   } catch (e) { /* */ }
 }
 function refreshUpdateBar() {
@@ -794,8 +821,46 @@ function refreshUpdateBar() {
 async function checkUpdate() {
   try {
     const u = await api().check_update();
-    if (u && u.update_available) { state.update = u; $("updateBar").classList.add("show"); refreshUpdateBar(); }
+    state.update = u || null;
+    if (u && u.update_available) { $("updateBar").classList.add("show"); refreshUpdateBar(); }
+    paintUpdateRow();
   } catch (e) { /* sin conexión: silencioso */ }
+}
+// --- pestana de ajustes ---------------------------------------------------
+// Se pinta al abrir la ventana y cuando cambia el idioma. Lo unico que pide
+// internet es el boton de buscar actualizaciones, y solo si lo pulsan.
+async function fillSettings() {
+  try {
+    const info = await api().app_info();
+    $("cfgVersion").textContent = "hotkeyconfig " + info.version + " \u00b7 MIT";
+    $("cfgProfilePath").textContent = info.profile;
+    $("cfgProfilePath").title = info.profile;
+  } catch (e) { /* la ventana sirve igual sin esto */ }
+  paintThemeRow();
+  paintUpdateRow();
+  // El desplegable esta redibujado por enhanceSelect: poner .value cambia el valor
+  // pero no lo que se lee, y se quedaba en "Espanol" con la ventana ya en ingles.
+  $("cfgLang").value = LANG;
+  if ($("cfgLang")._enh) $("cfgLang")._enh.sync();
+}
+function paintThemeRow() {
+  const dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  $("cfgTheme").textContent = dark ? tr("theme_dark") : tr("theme_light");
+}
+function paintUpdateRow() {
+  const u = state.update;
+  if (!u) return;
+  $("cfgUpdSub").textContent = u.update_available
+    ? tr("upd_found").replace("{v}", u.latest) : tr("upd_latest");
+}
+async function checkUpdateFromSettings() {
+  $("cfgUpdSub").textContent = tr("upd_checking");
+  try {
+    const u = await api().check_update();
+    state.update = u || null;
+    if (u && u.update_available) { $("updateBar").classList.add("show"); refreshUpdateBar(); }
+    paintUpdateRow();
+  } catch (e) { $("cfgUpdSub").textContent = tr("upd_offline"); }
 }
 function switchSection(sec) {
   state.section = sec;
@@ -968,6 +1033,26 @@ function wire() {
     offerAutostart();
   };
   $("autoChk").onchange = (e) => setAutostart(e.target.checked);
+  // El interruptor de "teclas funcionando ahora" hace lo mismo que el boton del
+  // pie: son dos caras del mismo listener, no dos ajustes.
+  $("cfgListenChk").onchange = async (e) => {
+    const want = e.target.checked;
+    const r = want ? await api().start_listener() : await api().stop_listener();
+    state.listener = r.listener; setListenerBtn(); paintListenRow();
+    if (r.error === "autostart") { toast(tr("listener_is_auto"), "err"); return; }
+    toast(state.listener ? tr("listener_on") : tr("listener_off"), "ok");
+  };
+  $("cfgUpdBtn").onclick = checkUpdateFromSettings;
+  $("cfgOpenProfile").onclick = async () => {
+    const r = await api().open_profile("file");
+    if (!r.ok) toast(tr("err") + ": " + r.error, "err");
+  };
+  $("cfgOpenFolder").onclick = async () => {
+    const r = await api().open_profile("folder");
+    if (!r.ok) toast(tr("err") + ": " + r.error, "err");
+  };
+  $("cfgLang").onchange = (e) => applyLang(e.target.value);
+  $("cfgRepo").onclick = () => api().open_url("https://github.com/Mun1to/hotkeyconfig");
   $("clashFix").onclick = async () => {
     if (!(await confirmDialog(tr("clash_confirm")))) return;
     // Solo se mueven las teclas en conflicto, y el perfil queda guardado en disco:
@@ -993,6 +1078,7 @@ async function init() {
   try { MODELS = await api().models() || []; } catch (e) { MODELS = []; }
   wire(); enhanceIn(document); applyLang(detectLang()); setListenerBtn(); pollStatus(); setInterval(pollStatus, 3000);
   refreshAutostart();
+  fillSettings();
   checkUpdate();
   // La lista de programas y el repaso de combinaciones van después de pintar: son
   // ayudas, y ninguna merece retrasar la ventana.

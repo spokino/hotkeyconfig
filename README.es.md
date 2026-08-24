@@ -143,9 +143,10 @@ Cada perilla tiene tres acciones: girar a la izquierda, pulsar y girar a la dere
 2. **Haz clic en una tecla o perilla** y elige qué hace. Para abrir un programa, escribe su nombre y
    **elígelo de la lista de lo que tienes instalado** (sale con su icono), o pulsa la carpeta para
    buscar el archivo. Pulsa **Probar** para verlo al momento.
-3. **Marca «Siempre activas»** y olvídate: el listener arranca con Windows, así que tus teclas
-   responden con esta ventana cerrada y después de reiniciar. O usa **Iniciar listener** si solo lo
-   quieres para este rato.
+3. **Ajustes -> «Arrancar con Windows»** y olvídate: el listener arranca con Windows, así que tus
+   teclas responden con esta ventana cerrada y después de reiniciar. El interruptor de debajo,
+   «Teclas funcionando ahora», enciende y apaga el listener solo para este rato, y al apagarlo
+   también para el que hubiera arrancado Windows al iniciar sesión.
 
 > La parte única vive **en la memoria del teclado**, así que persiste. El listener solo hace falta
 > para **ejecutar tus acciones**: si no está en marcha, esas acciones simplemente no se disparan.

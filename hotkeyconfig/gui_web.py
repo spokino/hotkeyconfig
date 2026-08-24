@@ -7,6 +7,7 @@ drive the listener.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import threading
 import time
@@ -300,6 +301,24 @@ class Api:
         from . import updater
         return updater.apply_update()
 
+    def app_info(self) -> dict:
+        """Version and where the profile lives, for the settings tab."""
+        from . import __version__
+        return {
+            "version": __version__,
+            "profile": str(self.profile_path),
+            "folder": str(self.profile_path.parent),
+        }
+
+    def open_profile(self, what: str = "file") -> dict:
+        """Open profile.yaml, or the folder holding it, with whatever Windows uses."""
+        target = self.profile_path if what != "folder" else self.profile_path.parent
+        try:
+            os.startfile(str(target))  # type: ignore[attr-defined]
+            return {"ok": True}
+        except Exception as exc:  # noqa: BLE001
+            return {"ok": False, "error": str(exc)}
+
     def open_url(self, url: str) -> dict:
         import webbrowser
         webbrowser.open(url)
@@ -375,11 +394,49 @@ class Api:
             self.listener.terminate()
             self.listener = None
             return {"listener": False}
-        # Lo arranco Windows al iniciar sesion, no esta ventana: no es nuestro para
-        # matarlo, y quitar el arranque automatico es lo que de verdad se quiere.
+        # El que arranca Windows al iniciar sesion no es hijo de esta ventana, asi
+        # que hay que buscarlo por su linea de comandos. Antes se respondia "quita
+        # el arranque automatico", pero eso solo evita el proximo inicio de sesion:
+        # el que ya esta corriendo seguia vivo y la unica salida era reiniciar.
         if self._listener_running():
+            if self._kill_stray_listeners():
+                return {"listener": False}
             return {"listener": True, "ok": False, "error": "autostart"}
         return {"listener": False}
+
+    def _kill_stray_listeners(self) -> bool:
+        """Kill any listener running outside this window. True if one went down.
+
+        Matched by command line, which is the only thing they have in common: the
+        lock is a named mutex and does not say who holds it. The venv launcher
+        shows up as two processes with the same command line, so both are killed.
+        """
+        import signal
+        try:
+            import win32com.client  # from pywin32
+        except ImportError:
+            return False
+        mine = os.getpid()
+        killed = False
+        try:
+            wmi = win32com.client.GetObject("winmgmts:")
+            found = wmi.ExecQuery("SELECT ProcessId, CommandLine FROM Win32_Process")
+        except Exception:  # noqa: BLE001
+            return False
+        for proc in found:
+            pid = int(proc.ProcessId or 0)
+            line = (proc.CommandLine or "").lower()
+            if pid in (0, mine) or "hotkeyconfig" not in line:
+                continue
+            # "run" como palabra suelta: la ventana se abre con "gui" y no debe caer.
+            if " run " not in line + " ":
+                continue
+            try:
+                os.kill(pid, signal.SIGTERM)
+                killed = True
+            except OSError:
+                pass
+        return killed
 
 
 def _free_port() -> int:

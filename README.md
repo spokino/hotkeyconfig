@@ -138,8 +138,10 @@ Every knob has three actions: turn left, press, turn right.
 2. **Click any key or knob** and pick what it does. To open a program, type its name and **pick it
    from the list of what you have installed** (icon included), or press the folder to browse for the
    file. Press **Test** to try it right away.
-3. **Tick "Always on"** and forget about it: the listener starts with Windows, so your keys answer
-   with this window closed and after a restart. Or use **Start listener** for just this session.
+3. **Settings -> "Start with Windows"** and forget about it: the listener starts with Windows, so
+   your keys answer with this window closed and after a restart. The switch right below it,
+   "Keys working right now", turns the listener on and off for this session only, and turning it
+   off also stops the one Windows started at login.
 
 > The unique part lives **in the keyboard's memory**, so it persists. The listener is only needed to
 > **run your actions**: if it is not running, those actions simply do not fire.
